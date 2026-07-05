@@ -6,6 +6,7 @@ import {
   fetchFlagImages,
 } from "@/lib/wikipedia/client";
 import { getFallbackImage } from "@/lib/media/fallback-images";
+import { getFlagUrl } from "@/lib/media/images";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -73,8 +74,9 @@ async function buildQuestionsFromEntities(
     const entity = entities[i];
     const wiki = wikiData.get(entity.wiki);
     const answer = entity.answer ?? entity.wiki.replace(/_/g, " ");
+    const flagUrl = template.useFlags ? getFlagUrl(answer) || getFlagUrl(entity.wiki.replace(/_/g, " ")) : "";
     const image =
-      (template.useFlags ? flagImages.get(entity.wiki) : undefined) ??
+      (template.useFlags ? flagImages.get(entity.wiki) || flagUrl || undefined : undefined) ??
       wiki?.image ??
       getFallbackImage(entity.wiki);
 

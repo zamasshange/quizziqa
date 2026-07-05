@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Flame, Coins, Heart, Star, Clock } from "lucide-react";
+import { ArrowLeft, Flame, Coins, Heart, Star, Clock, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { xpProgressInLevel } from "@/lib/player/progress";
 
@@ -15,12 +15,15 @@ interface PlayHudProps {
   score: number;
   currentIndex: number;
   total: number;
-  difficulty: string;
+  settingsDifficulty: string;
+  timerSeconds: number;
   categoryEmoji?: string;
   isDaily?: boolean;
   combo: number;
   timeLeft?: number;
   timerFrozen?: boolean;
+  sessionXp?: number;
+  sessionCoins?: number;
 }
 
 export function PlayHud({
@@ -33,18 +36,21 @@ export function PlayHud({
   score,
   currentIndex,
   total,
-  difficulty,
+  settingsDifficulty,
+  timerSeconds,
   categoryEmoji,
   isDaily,
   combo,
   timeLeft,
   timerFrozen,
+  sessionXp = 0,
+  sessionCoins = 0,
 }: PlayHudProps) {
   const xpBar = xpProgressInLevel(xp);
 
   return (
     <header className="relative z-20 shrink-0 px-3 md:px-5 pt-[max(0.35rem,env(safe-area-inset-top))] pb-1.5 md:pb-2 max-w-6xl mx-auto w-full border-b border-black/10 bg-[#fffdf4]">
-      <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2">
+      <div className="flex items-center gap-1.5 md:gap-2 mb-1.5">
         <Link
           href={backHref}
           className="play-hud-pill shrink-0 !px-2.5 !py-1.5 hover:bg-secondary"
@@ -52,7 +58,7 @@ export function PlayHud({
           <ArrowLeft className="h-4 w-4" />
         </Link>
 
-        <div className="flex-1 flex items-center justify-center gap-1.5 flex-wrap">
+        <div className="flex-1 flex items-center justify-center gap-1 flex-wrap">
           <span className="play-hud-pill text-[10px]">
             <Flame className="h-3 w-3 text-orange-500" />
             {streak}
@@ -71,6 +77,9 @@ export function PlayHud({
           <span className="play-hud-pill text-[10px]">
             <Coins className="h-3 w-3 text-amber-600" />
             {coins}
+            {sessionCoins > 0 && (
+              <span className="text-green-700 text-[9px]">+{sessionCoins}</span>
+            )}
           </span>
           <span className="play-hud-pill text-[10px]">
             <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
@@ -90,18 +99,26 @@ export function PlayHud({
             </span>
           )}
           {categoryEmoji && <span className="text-base">{categoryEmoji}</span>}
+          <Link href="/settings" className="play-hud-pill !px-2 !py-1.5" aria-label="Settings">
+            <Settings className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </div>
 
-      {/* XP bar — desktop only (saves vertical space on mobile) */}
-      <div className="hidden md:block mb-2 px-1">
+      {/* XP bar — always visible */}
+      <div className="mb-1.5 px-1">
         <div className="flex justify-between text-[9px] font-bold text-black/50 mb-0.5">
-          <span>{xp.toLocaleString()} XP</span>
+          <span>
+            {xp.toLocaleString()} XP
+            {sessionXp > 0 && (
+              <span className="text-green-700 ml-1">+{sessionXp}</span>
+            )}
+          </span>
           <span>
             {xpBar.current}/{xpBar.needed}
           </span>
         </div>
-        <div className="h-2 rounded-full bg-black/8 overflow-hidden border border-black/10">
+        <div className="h-1.5 md:h-2 rounded-full bg-black/8 overflow-hidden border border-black/10">
           <div
             className="h-full rounded-full bg-gradient-to-r from-btn-green to-btn-green-dark transition-[width] duration-700 ease-out"
             style={{ width: `${xpBar.percent}%` }}
@@ -109,8 +126,14 @@ export function PlayHud({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 md:gap-2 text-[10px] font-bold text-black/70">
-        <span className="play-hud-pill !py-1 capitalize">{difficulty}</span>
+      <div className="flex items-center gap-1.5 text-[10px] font-bold text-black/70">
+        <span className="play-hud-pill !py-1 capitalize">{settingsDifficulty}</span>
+        {timerSeconds > 0 && (
+          <span className="play-hud-pill !py-1 text-black/50">
+            <Clock className="h-3 w-3 inline mr-0.5" />
+            {timerSeconds}s
+          </span>
+        )}
         <span>
           Q {Math.min(currentIndex + 1, total)}/{total}
         </span>
@@ -124,15 +147,14 @@ export function PlayHud({
           <Star className="h-3 w-3 fill-answer4 text-answer4" />
           {score}
         </span>
-        {timeLeft !== undefined && (
+        {timeLeft !== undefined && timerSeconds > 0 && (
           <span
             className={cn(
-              "play-hud-pill !py-1 tabular-nums",
+              "play-hud-pill !py-1 tabular-nums font-black",
               timeLeft <= 5 && !timerFrozen && "text-red-600 play-shake",
               timerFrozen && "text-sky-600"
             )}
           >
-            <Clock className="h-3 w-3 inline mr-0.5" />
             {timerFrozen ? "⏸" : `${timeLeft}s`}
           </span>
         )}

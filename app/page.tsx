@@ -70,7 +70,7 @@ export default function HomePage() {
 
         {/* Guess the __ series */}
         <section>
-          <SectionHeader title="Guess the…" href="/categories" />
+          <SectionHeader title="Guess the…" href="/games" />
           <HorizontalScroll>
             {guessTheGames.map((game) => (
               <GameCard

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { Search as SearchIcon, X } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { searchAll, type SearchResult } from "@/lib/search/index";
 
@@ -22,17 +23,21 @@ function groupResults(results: SearchResult[]) {
   return groups;
 }
 
-export default function SearchPage() {
-  const [query, setQuery] = useState("");
+function SearchContent() {
+  const searchParams = useSearchParams();
+  const initialQ = searchParams.get("q") ?? "";
+  const [query, setQuery] = useState(initialQ);
+
+  useEffect(() => {
+    setQuery(initialQ);
+  }, [initialQ]);
 
   const results = useMemo(() => searchAll(query, 40), [query]);
   const grouped = useMemo(() => groupResults(results), [results]);
   const hasResults = results.length > 0;
 
   return (
-    <AppShell>
-      <h1 className="text-3xl font-black text-black mb-4">Search</h1>
-
+    <>
       <div className="relative mb-6">
         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-black/40" />
         <input
@@ -60,7 +65,7 @@ export default function SearchPage() {
           <SearchIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
           <p className="font-black">Universal Search</p>
           <p className="text-sm font-bold mt-1">
-            Games, categories, collections, countries, celebrities, animals & more
+            Try &ldquo;celebrity&rdquo;, &ldquo;flag&rdquo;, &ldquo;president&rdquo;, &ldquo;movie&rdquo;…
           </p>
         </div>
       )}
@@ -100,6 +105,17 @@ export default function SearchPage() {
           </div>
         </section>
       ))}
+    </>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <AppShell>
+      <h1 className="text-3xl font-black text-black mb-4">Search</h1>
+      <Suspense fallback={<div className="text-center py-8 font-bold text-black/50">Loading…</div>}>
+        <SearchContent />
+      </Suspense>
     </AppShell>
   );
 }

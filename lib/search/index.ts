@@ -91,7 +91,9 @@ function buildSearchIndex(): SearchResult[] {
 
   const allGames = [
     ...games.map((g) => ({ ...g, slug: g.slug })),
-    ...gameTemplates.map((t) => ({ ...t, slug: t.slug })),
+    ...gameTemplates
+      .filter((t) => !games.some((g) => g.slug === t.slug))
+      .map((t) => ({ ...t, slug: t.slug })),
   ];
 
   for (const game of allGames) {

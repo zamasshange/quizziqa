@@ -73,6 +73,26 @@ export const fallbackImages: Record<string, string> = {
     "https://upload.wikimedia.org/wikipedia/commons/7/7e/Emmanuel_Macron_portrait_%28cropped%29.jpg",
   Justin_Trudeau:
     "https://upload.wikimedia.org/wikipedia/commons/8/8a/Justin_Trudeau_2019.jpg",
+  "Star_Wars_(film)":
+    "https://upload.wikimedia.org/wikipedia/en/8/87/StarWarsMoviePoster1977.jpg",
+  The_Godfather:
+    "https://upload.wikimedia.org/wikipedia/en/1/1c/Godfather_ver1.jpg",
+  "Titanic_(1997_film)":
+    "https://upload.wikimedia.org/wikipedia/en/2/22/Titanic_poster.jpg",
+  The_Dark_Knight:
+    "https://upload.wikimedia.org/wikipedia/en/8/8a/Dark_Knight.jpg",
+  "Jurassic_Park_(film)":
+    "https://upload.wikimedia.org/wikipedia/en/e/e7/Jurassic_Park_poster.jpg",
+  Forrest_Gump:
+    "https://upload.wikimedia.org/wikipedia/en/6/67/Forrest_Gump_poster.jpg",
+  The_Lion_King:
+    "https://upload.wikimedia.org/wikipedia/en/3/3d/The_Lion_King_poster.jpg",
+  "Avatar_(2009_film)":
+    "https://upload.wikimedia.org/wikipedia/en/d/d6/Avatar_%282009_film%29_poster.jpg",
+  Inception:
+    "https://upload.wikimedia.org/wikipedia/en/7/7f/Inception_ver3.jpg",
+  The_Matrix:
+    "https://upload.wikimedia.org/wikipedia/en/c/c1/The_Matrix_Poster.jpg",
 };
 
 export function getFallbackImage(wikiTitle: string): string | undefined {

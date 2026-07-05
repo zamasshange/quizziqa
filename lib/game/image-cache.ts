@@ -34,6 +34,10 @@ export function preloadImages(urls: (string | undefined)[]): void {
   }
 }
 
+export async function preloadImagesAndWait(urls: (string | undefined)[]): Promise<void> {
+  await Promise.all(urls.filter(Boolean).map((url) => preloadImage(url!)));
+}
+
 /** Hidden DOM link preload for high-priority next question */
 export function preloadImageLink(url: string): void {
   if (!url || typeof document === "undefined" || loaded.has(url)) return;

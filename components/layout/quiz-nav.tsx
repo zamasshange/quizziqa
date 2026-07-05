@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { categories } from "@/lib/data/categories";
+import { searchAll } from "@/lib/search/index";
 
 const startItem = { href: "/", label: "Start", emoji: "🏠" };
 
@@ -23,12 +26,25 @@ function isActive(pathname: string, href: string) {
 }
 
 export function QuizNav({ minimal }: { minimal?: boolean }) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  const handleSearch = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const q = query.trim();
+      if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+      else router.push("/search");
+    },
+    [query, router]
+  );
+
   if (minimal) return null;
 
   return (
-    <nav className="relative z-10 h-14 md:h-24 w-full bg-[#fffdf4] border-b border-black/10 shadow-soft-1 md:shadow-none">
-      <div className="custom-container h-full flex items-center">
-        <Link href="/" className="block h-10 md:h-14 w-36 md:w-48 lg:w-56 shrink-0">
+    <nav className="relative z-10 h-14 md:h-20 w-full bg-[#fffdf4] border-b border-black/10 shadow-soft-1 md:shadow-none">
+      <div className="custom-container h-full flex items-center gap-3">
+        <Link href="/" className="block h-9 md:h-12 w-28 md:w-40 shrink-0">
           <Image
             src="/images/logo.svg"
             width={152}
@@ -38,6 +54,27 @@ export function QuizNav({ minimal }: { minimal?: boolean }) {
             className="h-full w-auto object-contain object-left"
             priority
           />
+        </Link>
+
+        <form onSubmit={handleSearch} className="flex-1 max-w-md hidden sm:block">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black/40" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search games…"
+              className="w-full h-9 pl-9 pr-3 rounded-full border-2 border-black/15 bg-white text-sm font-bold focus:outline-none focus:border-black/30"
+            />
+          </div>
+        </form>
+
+        <Link
+          href="/search"
+          className="sm:hidden play-hud-pill !px-2.5 !py-2"
+          aria-label="Search"
+        >
+          <Search className="h-4 w-4" />
         </Link>
       </div>
     </nav>

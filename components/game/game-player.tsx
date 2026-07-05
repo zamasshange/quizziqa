@@ -14,7 +14,7 @@ import {
   getAnswerPool,
   recordSessionQuestions,
 } from "@/lib/game/question-engine";
-import { preloadImageLink, preloadImages } from "@/lib/game/image-cache";
+import { preloadImageLink, preloadImages, preloadImagesAndWait } from "@/lib/game/image-cache";
 import { audioManager } from "@/lib/audio/audio-manager";
 import { PlayHud } from "@/components/game/play/play-hud";
 import { PlayAnswerGrid } from "@/components/game/play/play-answer-grid";
@@ -34,10 +34,6 @@ interface GamePlayerProps {
 
 type RoundState = "playing" | "correct" | "incorrect" | "finished";
 
-function initSession(initial: Game, count: number): GameQuestion[] {
-  return buildSessionQueue(initial.questions, initial.slug, count);
-}
-
 export function GamePlayer({
   game: initialGame,
   isDaily,
@@ -46,12 +42,11 @@ export function GamePlayer({
   categoryEmoji,
 }: GamePlayerProps) {
   const { stats, hydrated, recordGame } = usePlayerProgress();
-  const { settings } = useGameSettings();
+  const { settings, hydrated: settingsHydrated } = useGameSettings();
 
-  const [pool, setPool] = useState<GameQuestion[]>(initialGame.questions);
-  const [sessionQuestions, setSessionQuestions] = useState<GameQuestion[]>(() =>
-    initSession(initialGame, settings.questionCount)
-  );
+  const [pool, setPool] = useState<GameQuestion[]>([]);
+  const [sessionQuestions, setSessionQuestions] = useState<GameQuestion[]>([]);
+  const [sessionReady, setSessionReady] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roundState, setRoundState] = useState<RoundState>("playing");
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -80,7 +75,9 @@ export function GamePlayer({
   const [showReveal, setShowReveal] = useState(false);
   const [firstQuestion, setFirstQuestion] = useState(true);
 
-  const timerLimit = settings.timer || initialGame.timeLimit || 0;
+  const timerLimit = settingsHydrated
+    ? settings.timer
+    : (initialGame.timeLimit ?? 20);
   const [timeLeft, setTimeLeft] = useState(timerLimit);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -96,36 +93,9 @@ export function GamePlayer({
     hasEmoji: !!question?.emoji,
   });
   const isTextRound = mediaVariant === "text";
-  const baseXpPerQ = Math.round(initialGame.xpReward / sessionQuestions.length);
-
-  // Fetch full question pool for smart rotation
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/games/${initialGame.slug}/session?count=${settings.questionCount}`
-        );
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as Game & { questions: GameQuestion[] };
-        if (cancelled || !data.questions?.length) return;
-        setPool(data.questions);
-        answerPoolRef.current = getAnswerPool(data.questions);
-        const session = buildSessionQueue(
-          data.questions,
-          initialGame.slug,
-          settings.questionCount
-        );
-        setSessionQuestions(session);
-        preloadImages(session.slice(0, 3).map((q) => q.image));
-      } catch {
-        /* use SSR pool */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [initialGame.slug, settings.questionCount]);
+  const baseXpPerQ = sessionQuestions.length
+    ? Math.round(initialGame.xpReward / sessionQuestions.length)
+    : initialGame.xpReward;
 
   const resetRound = useCallback(
     (q: GameQuestion, hideWrong = 0) => {
@@ -139,6 +109,59 @@ export function GamePlayer({
     },
     [timerLimit]
   );
+
+  // Fetch full pool + build session once settings are loaded
+  useEffect(() => {
+    if (!settingsHydrated) return;
+    let cancelled = false;
+
+    (async () => {
+      setSessionReady(false);
+      try {
+        const res = await fetch(
+          `/api/games/${initialGame.slug}/session?count=${settings.questionCount}`
+        );
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as Game & { questions: GameQuestion[] };
+        const withMedia = (data.questions ?? []).filter((q) => q.image || q.emoji);
+        const source = withMedia.length > 0 ? withMedia : initialGame.questions.filter((q) => q.image || q.emoji);
+        if (cancelled || source.length === 0) return;
+
+        setPool(source);
+        answerPoolRef.current = getAnswerPool(source);
+        const session = buildSessionQueue(source, initialGame.slug, settings.questionCount);
+        if (session.length === 0 || cancelled) return;
+
+        await preloadImagesAndWait(session.slice(0, 3).map((q) => q.image));
+        if (cancelled) return;
+
+        setSessionQuestions(session);
+        setCurrentIndex(0);
+        setSessionReady(true);
+        preloadImages(session.slice(3, 6).map((q) => q.image));
+      } catch {
+        const fallback = buildSessionQueue(
+          initialGame.questions.filter((q) => q.image || q.emoji),
+          initialGame.slug,
+          settings.questionCount
+        );
+        if (!cancelled && fallback.length > 0) {
+          await preloadImagesAndWait(fallback.slice(0, 2).map((q) => q.image));
+          setSessionQuestions(fallback);
+          setPool(initialGame.questions);
+          setSessionReady(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialGame.slug, initialGame.questions, settings.questionCount, settingsHydrated]);
+
+  useEffect(() => {
+    if (settingsHydrated && timerLimit) setTimeLeft(timerLimit);
+  }, [settingsHydrated, timerLimit]);
 
   useEffect(() => {
     if (!question) return;
@@ -373,10 +396,11 @@ export function GamePlayer({
 
   const maxHints = settings.hintsEnabled ? initialGame.maxHints : 0;
 
-  if (!question && roundState !== "finished") {
+  if (!sessionReady || (!question && roundState !== "finished")) {
     return (
-      <div className="flex-1 flex items-center justify-center text-black/50 font-bold text-sm">
-        Loading questions…
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 text-black/50">
+        <div className="w-10 h-10 rounded-full border-4 border-black/10 border-t-btn-green animate-spin" />
+        <p className="font-bold text-sm">Loading game…</p>
       </div>
     );
   }
@@ -399,12 +423,15 @@ export function GamePlayer({
         score={score}
         currentIndex={currentIndex}
         total={sessionQuestions.length}
-        difficulty={question?.difficulty ?? initialGame.difficulty}
+        settingsDifficulty={settings.difficulty}
+        timerSeconds={timerLimit}
         categoryEmoji={categoryEmoji}
         isDaily={isDaily}
         combo={combo}
-        timeLeft={timerLimit && roundState === "playing" ? timeLeft : undefined}
+        timeLeft={timerLimit > 0 && roundState === "playing" ? timeLeft : undefined}
         timerFrozen={timerFrozen}
+        sessionXp={sessionXp}
+        sessionCoins={sessionCoins}
       />
 
       {roundState === "finished" ? (
@@ -474,7 +501,7 @@ export function GamePlayer({
                     categoryName={categoryName}
                     gameTitle={initialGame.title}
                     questionText={question.question}
-                    difficulty={question.difficulty}
+                    difficulty={settings.difficulty}
                     isTextRound={isTextRound}
                     questionId={question.id}
                     animateEntry={animateEntry}

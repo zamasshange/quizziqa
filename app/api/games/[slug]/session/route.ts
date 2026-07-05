@@ -11,7 +11,7 @@ const getCachedPool = unstable_cache(
     if (!template) return null;
     return buildFullQuestionPool(template);
   },
-  ["question-pool-v1"],
+  ["question-pool-v2"],
   { revalidate: 86400, tags: ["question-pools"] }
 );
 
@@ -32,7 +32,13 @@ export async function GET(
 
   if (template) {
     const fullPool = await getCachedPool(slug);
-    if (fullPool && fullPool.length > 0) pool = fullPool;
+    if (fullPool && fullPool.length > 0) {
+      pool = fullPool.filter((q) => !!q.image || !!q.emoji);
+    }
+  }
+
+  if (pool.length === 0) {
+    pool = game.questions.filter((q) => !!q.image || !!q.emoji);
   }
 
   const sessionGame = {
