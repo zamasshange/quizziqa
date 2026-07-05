@@ -125,13 +125,13 @@ function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: 
   }
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full min-h-[160px] flex items-center justify-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={blobSrc}
         alt=""
         role="presentation"
-        className="block max-w-full max-h-full w-auto h-auto object-contain mx-auto"
+        className="block w-full h-full min-w-0 min-h-0 object-contain"
         decoding="async"
       />
     </div>
@@ -145,7 +145,7 @@ const FRAME: Record<MediaVariant, { normal: string; compact: string }> = {
     compact: "w-[200px] h-[125px]",
   },
   landscape: {
-    normal: "w-full max-w-[300px] sm:max-w-[380px] lg:max-w-[480px] xl:max-w-[560px] h-[180px] sm:h-[240px] lg:h-[320px] xl:h-[380px]",
+    normal: "w-full max-w-[300px] sm:max-w-[380px] lg:max-w-[560px] xl:max-w-[640px] h-[180px] sm:h-[240px] lg:h-[380px] xl:h-[440px]",
     compact: "w-full max-w-[260px] h-[150px]",
   },
   food: {
@@ -157,8 +157,8 @@ const FRAME: Record<MediaVariant, { normal: string; compact: string }> = {
     compact: "w-[170px] h-[170px]",
   },
   product: {
-    normal: "w-[140px] sm:w-[180px] lg:w-[220px] xl:w-[260px] h-[220px] sm:h-[280px] lg:h-[340px] xl:h-[400px]",
-    compact: "w-[120px] h-[180px] max-h-[28vh]",
+    normal: "w-[140px] sm:w-[200px] md:w-full md:max-w-[320px] lg:max-w-[380px] h-[220px] sm:h-[280px] md:h-[340px] lg:h-[400px]",
+    compact: "w-[120px] h-[180px] max-h-[28vh] md:w-full md:max-w-[320px] md:h-[340px] md:max-h-none",
   },
   logo: {
     normal: "w-[180px] sm:w-[240px] lg:w-[300px] xl:w-[360px] h-[180px] sm:h-[240px] lg:h-[300px] xl:h-[360px]",
@@ -238,8 +238,10 @@ export function QuestionMedia({
     <div className={cn("flex items-center justify-center w-full h-full", className)}>
       <div
         className={cn(
-          "relative flex items-center justify-center overflow-hidden mx-auto",
-          frameless ? sizeClass : cn("rounded-xl", sizeClass)
+          "relative flex items-center justify-center overflow-hidden",
+          frameless
+            ? "w-full h-full min-h-[200px] md:min-h-[320px] lg:min-h-[380px]"
+            : cn("mx-auto rounded-xl", sizeClass)
         )}
       >
         <MediaImage wikiKey={wikiKey} fallbackSrc={image} />

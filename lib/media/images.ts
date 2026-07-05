@@ -93,14 +93,14 @@ export function inferMediaVariant(
   if (gameSlug.includes("logo") || gameSlug.includes("brand")) return "logo";
   if (gameSlug.includes("tech")) return "logo";
   if (gameSlug.includes("food")) return "food";
+  if (gameSlug.includes("phone")) return "product";
   if (
-    gameSlug.includes("phone") ||
     gameSlug.includes("car") ||
     gameSlug.includes("video-game") ||
     gameSlug.includes("invention") ||
     gameSlug.includes("instrument")
   ) {
-    return "product";
+    return "landscape";
   }
   if (
     gameSlug.includes("celebrity") ||
