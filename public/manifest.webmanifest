@@ -1,0 +1,20 @@
+{
+  "name": "Guess Everything",
+  "short_name": "GuessAll",
+  "description": "Play hundreds of guessing games. Earn XP, learn, and compete!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffdf4",
+  "theme_color": "#fffdf4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["games", "education", "entertainment"],
+  "prefer_related_applications": false
+}

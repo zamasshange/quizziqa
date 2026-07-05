@@ -1,26 +1,118 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background-color: #fffdf4;
+  --foreground: #000000;
+  --card: #ffffff;
+  --petrol-dark: #19444a;
+  --answer4: #f5d76e;
+  --btn-green: #c6ea84;
+  --btn-green-dark: #00a76d;
+  --btn-cyan: #6feeff;
+  --background: #fffdf4;
+  --border: rgba(0, 0, 0, 0.15);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-petrol-dark: var(--petrol-dark);
+  --color-answer4: var(--answer4);
+  --color-btn-green: var(--btn-green);
+  --color-btn-green-dark: var(--btn-green-dark);
+  --color-btn-cyan: var(--btn-cyan);
+  --color-secondary: #f5f0e1;
+  --color-border: var(--border);
+  --font-sans: var(--font-roboto), system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background-color);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-roboto), system-ui, sans-serif;
+  overscroll-behavior-y: none;
+  min-width: 100%;
+  overflow-x: hidden;
+  min-height: 100dvh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("/images/bg-pattern.svg");
+  background-size: 1340px 1060px;
+  background-position: center top;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.play-mode {
+  background-color: #19444a;
+  color: #ffffff;
+  overflow: hidden;
+  height: 100dvh;
+}
+
+body.play-mode::before {
+  display: none;
+}
+
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-container {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  .custom-container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.shadow-soft-1 {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-inner-hard-1 {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

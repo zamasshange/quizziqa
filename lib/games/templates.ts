@@ -1,0 +1,238 @@
+import type { Difficulty, GameMode } from "@/lib/types";
+import type { EntityEntry } from "@/lib/data/entities";
+import {
+  celebrities,
+  cities,
+  countries,
+  animals,
+  landmarks,
+  planets,
+  paintings,
+  athletes,
+  flowers,
+  scientists,
+  foods,
+} from "@/lib/data/entities";
+
+export interface GameTemplate {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  categoryId: string;
+  mode: GameMode;
+  difficulty: Difficulty;
+  xpReward: number;
+  timeLimit?: number;
+  maxHints: number;
+  maxSkips: number;
+  questionPrompt: string;
+  entities: EntityEntry[];
+  /** Use flag images instead of page thumbnail */
+  useFlags?: boolean;
+  featured?: boolean;
+  trending?: boolean;
+  isNew?: boolean;
+  /** Max questions per round (subset of entities) */
+  questionCount?: number;
+}
+
+export const gameTemplates: GameTemplate[] = [
+  {
+    id: "guess-celebrity",
+    slug: "guess-the-celebrity",
+    title: "Guess the Celebrity",
+    description: "Identify famous people from their photos",
+    categoryId: "celebrities",
+    mode: "guess-from-image",
+    difficulty: "medium",
+    xpReward: 55,
+    timeLimit: 25,
+    maxHints: 2,
+    maxSkips: 1,
+    questionPrompt: "Who is this celebrity?",
+    entities: celebrities,
+    featured: true,
+    trending: true,
+    isNew: true,
+    questionCount: 10,
+  },
+  {
+    id: "guess-city",
+    slug: "guess-the-city",
+    title: "Guess the City",
+    description: "Name the city from iconic Wikipedia photos",
+    categoryId: "geo",
+    mode: "guess-from-image",
+    difficulty: "medium",
+    xpReward: 50,
+    maxHints: 2,
+    maxSkips: 1,
+    questionPrompt: "Which city is this?",
+    entities: cities,
+    trending: true,
+    isNew: true,
+    questionCount: 10,
+  },
+  {
+    id: "guess-flag",
+    slug: "guess-the-flag",
+    title: "Guess the Flag",
+    description: "Identify countries from their flags",
+    categoryId: "geo",
+    mode: "guess-from-image",
+    difficulty: "easy",
+    xpReward: 45,
+    timeLimit: 20,
+    maxHints: 2,
+    maxSkips: 1,
+    questionPrompt: "Which country does this flag belong to?",
+    entities: countries,
+    useFlags: true,
+    featured: true,
+    questionCount: 10,
+  },
+  {
+    id: "guess-animal-wiki",
+    slug: "guess-the-animal-wiki",
+    title: "Guess the Animal",
+    description: "Identify animals from Wikipedia photos",
+    categoryId: "animals",
+    mode: "guess-from-image",
+    difficulty: "easy",
+    xpReward: 40,
+    maxHints: 3,
+    maxSkips: 2,
+    questionPrompt: "What animal is this?",
+    entities: animals,
+    trending: true,
+    questionCount: 10,
+  },
+  {
+    id: "guess-landmark-wiki",
+    slug: "guess-the-landmark",
+    title: "Guess the Landmark",
+    description: "Name famous landmarks around the world",
+    categoryId: "landmarks",
+    mode: "guess-from-image",
+    difficulty: "medium",
+    xpReward: 50,
+    maxHints: 2,
+    maxSkips: 1,
+    questionPrompt: "What landmark is this?",
+    entities: landmarks,
+    questionCount: 8,
+  },
+  {
+    id: "guess-planet",
+    slug: "guess-the-planet",
+    title: "Guess the Planet",
+    description: "Explore our solar system",
+    categoryId: "space",
+    mode: "guess-from-image",
+    difficulty: "easy",
+    xpReward: 35,
+    maxHints: 3,
+    maxSkips: 2,
+    questionPrompt: "Which planet is this?",
+    entities: planets,
+    questionCount: 8,
+  },
+  {
+    id: "guess-painting",
+    slug: "guess-the-painting",
+    title: "Guess the Painting",
+    description: "Identify masterpieces of art history",
+    categoryId: "art",
+    mode: "guess-from-image",
+    difficulty: "hard",
+    xpReward: 60,
+    maxHints: 1,
+    maxSkips: 1,
+    questionPrompt: "What is this famous painting called?",
+    entities: paintings,
+    isNew: true,
+    questionCount: 6,
+  },
+  {
+    id: "guess-athlete",
+    slug: "guess-the-athlete",
+    title: "Guess the Athlete",
+    description: "Identify sports legends from photos",
+    categoryId: "sports",
+    mode: "guess-from-image",
+    difficulty: "medium",
+    xpReward: 50,
+    maxHints: 2,
+    maxSkips: 1,
+    questionPrompt: "Who is this athlete?",
+    entities: athletes,
+    trending: true,
+    questionCount: 8,
+  },
+  {
+    id: "guess-flower",
+    slug: "guess-the-flower",
+    title: "Guess the Flower",
+    description: "Name flowers from beautiful photos",
+    categoryId: "nature",
+    mode: "guess-from-image",
+    difficulty: "easy",
+    xpReward: 35,
+    maxHints: 3,
+    maxSkips: 2,
+    questionPrompt: "What flower is this?",
+    entities: flowers,
+    questionCount: 8,
+  },
+  {
+    id: "guess-scientist",
+    slug: "guess-the-scientist",
+    title: "Guess the Scientist",
+    description: "Identify history's greatest minds",
+    categoryId: "science",
+    mode: "guess-from-image",
+    difficulty: "hard",
+    xpReward: 55,
+    maxHints: 2,
+    maxSkips: 1,
+    questionPrompt: "Who is this scientist?",
+    entities: scientists,
+    isNew: true,
+    questionCount: 6,
+  },
+  {
+    id: "guess-food-wiki",
+    slug: "guess-the-food",
+    title: "Guess the Food",
+    description: "Identify dishes from around the world",
+    categoryId: "food",
+    mode: "guess-from-image",
+    difficulty: "easy",
+    xpReward: 40,
+    maxHints: 2,
+    maxSkips: 2,
+    questionPrompt: "What food is this?",
+    entities: foods,
+    questionCount: 8,
+  },
+  {
+    id: "guess-country",
+    slug: "guess-the-country",
+    title: "Guess the Country",
+    description: "Identify countries from Wikipedia photos",
+    categoryId: "geo",
+    mode: "guess-from-image",
+    difficulty: "medium",
+    xpReward: 45,
+    maxHints: 2,
+    maxSkips: 1,
+    questionPrompt: "Which country is this?",
+    entities: countries,
+    questionCount: 10,
+  },
+];
+
+export function getTemplateBySlug(slug: string) {
+  return gameTemplates.find((t) => t.slug === slug);
+}

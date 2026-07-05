@@ -1,65 +1,157 @@
-import Image from "next/image";
+import { AppShell } from "@/components/layout/app-shell";
+import { DailyJoinBanner, PromoBanners } from "@/components/home/quiz-home-banners";
+import { SectionHeader, HorizontalScroll } from "@/components/ui/section-header";
+import { CategoryCard } from "@/components/categories/category-card";
+import { GameCard } from "@/components/games/game-card";
+import { categories } from "@/lib/data/categories";
+import {
+  getFeaturedGamesMeta,
+  getTrendingGamesMeta,
+  getNewGamesMeta,
+  getDynamicTemplates,
+} from "@/lib/games/registry";
+import { collections } from "@/lib/data/collections";
+import { siteStats } from "@/lib/data/stats";
+import { formatNumber } from "@/lib/utils";
+import Link from "next/link";
+import { QuizButtonLink } from "@/components/ui/quiz-button";
 
-export default function Home() {
+export default function HomePage() {
+  const featured = getFeaturedGamesMeta();
+  const trending = getTrendingGamesMeta();
+  const recentlyAdded = getNewGamesMeta();
+  const guessTheGames = getDynamicTemplates();
+  const continueGame = guessTheGames.find((g) => g.slug === "guess-the-celebrity") ?? featured[0];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <AppShell>
+      <DailyJoinBanner />
+
+      <div className="md:pt-2 flex flex-col gap-4 pt-4">
+        <PromoBanners />
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Games", value: siteStats.gamesAvailable + guessTheGames.length },
+            { label: "Players", value: formatNumber(siteStats.players) },
+            { label: "Categories", value: categories.length },
+            { label: "Completed", value: formatNumber(siteStats.challengesCompleted) },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-xl bg-white border border-black/15 p-4 text-center shadow-soft-1"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <div className="text-2xl font-black">{stat.value}</div>
+              <div className="text-xs font-bold text-black/60">{stat.label}</div>
+            </div>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        <section>
+          <SectionHeader title="Continue Playing" />
+          <div className="rounded-xl bg-white border border-black/15 p-4 shadow-soft-1">
+            <div className="flex items-center gap-4">
+              <span className="text-4xl">⭐</span>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-black text-base truncate">{continueGame?.title ?? "Guess the Celebrity"}</h3>
+                <p className="text-xs font-bold text-black/60">Powered by Wikipedia + AI hints</p>
+              </div>
+              <QuizButtonLink
+                href={`/play/${continueGame?.slug ?? "guess-the-celebrity"}`}
+                color="lime"
+                textColor="black"
+                className="!min-w-0 !px-4 !h-10 !text-sm shrink-0"
+              >
+                Play
+              </QuizButtonLink>
+            </div>
+          </div>
+        </section>
+
+        {/* Guess the __ series */}
+        <section>
+          <SectionHeader title="Guess the…" href="/categories" />
+          <HorizontalScroll>
+            {guessTheGames.map((game) => (
+              <GameCard
+                key={game.id}
+                game={{
+                  id: game.id,
+                  slug: game.slug,
+                  title: game.title,
+                  description: game.description,
+                  categoryId: game.categoryId,
+                  difficulty: game.difficulty,
+                  xpReward: game.xpReward,
+                  featured: game.featured,
+                  trending: game.trending,
+                  isNew: game.isNew,
+                  timeLimit: game.timeLimit,
+                }}
+              />
+            ))}
+          </HorizontalScroll>
+        </section>
+
+        <section>
+          <SectionHeader title="Categories" href="/categories" />
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            {categories.slice(0, 6).map((cat) => (
+              <CategoryCard key={cat.id} category={cat} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <SectionHeader title="Popular This Week" />
+          <HorizontalScroll>
+            {trending.map((game) => (
+              <GameCard key={game.id} game={game} />
+            ))}
+          </HorizontalScroll>
+        </section>
+
+        <section>
+          <SectionHeader title="Recently Added" />
+          <HorizontalScroll>
+            {(recentlyAdded.length > 0 ? recentlyAdded : featured.slice(0, 3)).map(
+              (game) => (
+                <GameCard key={game.id} game={game} />
+              )
+            )}
+          </HorizontalScroll>
+        </section>
+
+        <section>
+          <SectionHeader title="Featured Games" />
+          <HorizontalScroll>
+            {featured.map((game) => (
+              <GameCard key={game.id} game={game} />
+            ))}
+          </HorizontalScroll>
+        </section>
+
+        <section className="pb-8">
+          <SectionHeader title="Collections" href="/collections" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {collections.slice(0, 8).map((col) => (
+              <Link
+                key={col.id}
+                href={`/collections/${col.slug}`}
+                className="rounded-xl bg-white border border-black/15 p-4 flex flex-col items-center text-center gap-2 shadow-soft-1 active:scale-[0.97] transition-transform"
+              >
+                <span className="text-3xl">{col.emoji}</span>
+                <h3 className="font-black text-sm leading-tight">{col.title}</h3>
+                <p className="text-[10px] font-bold text-black/60 line-clamp-2">
+                  {col.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <h1 className="sr-only">Guess Everything</h1>
+    </AppShell>
   );
 }
