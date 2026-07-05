@@ -96,6 +96,11 @@ export const games: Game[] = [
       { id: "m1", question: "\"May the Force be with you.\" — Which movie?", answer: "Star Wars", alternatives: ["Star Trek", "Guardians of the Galaxy", "Avatar"], fact: "Star Wars (1977) revolutionized special effects and became a global phenomenon.", difficulty: "easy" },
       { id: "m2", question: "\"Here's looking at you, kid.\" — Which movie?", answer: "Casablanca", alternatives: ["Gone with the Wind", "Citizen Kane", "The Maltese Falcon"], fact: "Casablanca won 3 Academy Awards including Best Picture in 1944.", difficulty: "hard" },
       { id: "m3", question: "\"I'll be back.\" — Which movie?", answer: "The Terminator", alternatives: ["Predator", "RoboCop", "Total Recall"], fact: "Arnold Schwarzenegger improvised the iconic line in The Terminator (1984).", difficulty: "medium" },
+      { id: "m4", question: "\"Why so serious?\" — Which movie?", answer: "The Dark Knight", alternatives: ["Batman Begins", "Joker", "Suicide Squad"], fact: "Heath Ledger won a posthumous Oscar for his Joker performance.", difficulty: "medium" },
+      { id: "m5", question: "\"To infinity and beyond!\" — Which movie?", answer: "Toy Story", alternatives: ["Monsters Inc.", "Finding Nemo", "The Incredibles"], fact: "Toy Story (1995) was the first fully computer-animated feature film.", difficulty: "easy" },
+      { id: "m6", question: "\"Life is like a box of chocolates.\" — Which movie?", answer: "Forrest Gump", alternatives: ["The Green Mile", "Cast Away", "Philadelphia"], fact: "Forrest Gump won 6 Academy Awards including Best Picture in 1995.", difficulty: "easy" },
+      { id: "m7", question: "\"You can't handle the truth!\" — Which movie?", answer: "A Few Good Men", alternatives: ["The Firm", "Jerry Maguire", "Top Gun"], fact: "Jack Nicholson's courtroom monologue became one of cinema's most quoted scenes.", difficulty: "hard" },
+      { id: "m8", question: "\"I'm the king of the world!\" — Which movie?", answer: "Titanic", alternatives: ["Avatar", "The Terminator", "Aliens"], fact: "Titanic was the first film to gross over $1 billion worldwide.", difficulty: "easy" },
     ],
   },
   {

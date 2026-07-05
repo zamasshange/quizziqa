@@ -9,6 +9,9 @@ const SLUG_ALIASES: Record<string, string> = {
   "world-flags": "guess-the-flag",
   "guess-the-animal": "guess-the-animal-wiki",
   "famous-landmarks": "guess-the-landmark",
+  "brand-logos": "guess-the-brand",
+  "planets-quiz": "guess-the-planet",
+  "car-silhouettes": "guess-the-car",
 };
 
 const getCachedDynamicGame = unstable_cache(
@@ -17,7 +20,7 @@ const getCachedDynamicGame = unstable_cache(
     if (!template) return null;
     return buildGameFromTemplate(template);
   },
-  ["dynamic-game-v4"],
+  ["dynamic-game-v7"],
   { revalidate: 86400, tags: ["wikipedia-games"] }
 );
 
@@ -56,6 +59,15 @@ export function getAllGameSlugs(): string[] {
 
 export function getDynamicTemplates() {
   return gameTemplates;
+}
+
+/** Featured & trending games first for homepage display */
+export function getSortedDynamicTemplates() {
+  return [...gameTemplates].sort((a, b) => {
+    const score = (t: typeof a) =>
+      (t.featured ? 4 : 0) + (t.trending ? 2 : 0) + (t.isNew ? 1 : 0);
+    return score(b) - score(a);
+  });
 }
 
 type GameListMeta = GameMeta & { mode?: GameMode };

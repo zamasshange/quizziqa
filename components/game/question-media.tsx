@@ -8,6 +8,7 @@ interface QuestionMediaProps {
   image?: string;
   emoji?: string;
   alt?: string;
+  text?: string;
   variant: MediaVariant;
   className?: string;
 }
@@ -51,6 +52,7 @@ export function QuestionMedia({
   image,
   emoji,
   alt = "",
+  text,
   variant,
   className,
 }: QuestionMediaProps) {
@@ -59,6 +61,31 @@ export function QuestionMedia({
   useEffect(() => {
     setError(false);
   }, [image]);
+
+  if (variant === "text" && text) {
+    const quoteMatch = text.match(/^("[^"]+"|'[^']+')/);
+    const quote = quoteMatch?.[1] ?? text;
+    const prompt = quoteMatch ? text.slice(quoteMatch[0].length).replace(/^[.\s—–-]+/, "") : null;
+
+    return (
+      <div className={cn("flex items-center justify-center", className)}>
+        <div
+          className={cn(
+            "w-[280px] sm:w-[340px] md:w-[400px] px-6 py-8 md:py-10",
+            "rounded-2xl bg-white/10 border-2 border-white/25",
+            "shadow-[0_16px_48px_rgba(0,0,0,0.4)] text-center"
+          )}
+        >
+          <p className="text-xl md:text-2xl font-black text-white leading-snug italic">
+            {quote}
+          </p>
+          {prompt && (
+            <p className="mt-4 text-sm font-bold text-white/70">{prompt}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (emoji) {
     return (
@@ -138,7 +165,7 @@ export function QuestionMedia({
 
   if (variant === "square" || variant === "logo") {
     return (
-      <div className={cn("relative flex items-center justify-center", className)}>
+      <div className={cn("flex items-center justify-center", className)}>
         <div
           className={cn(
             "relative w-full max-w-[300px] sm:max-w-[340px] md:max-w-[380px] aspect-square",
@@ -149,7 +176,7 @@ export function QuestionMedia({
           <MediaImage
             src={image}
             alt={alt || "Guess this"}
-            className="object-cover object-center"
+            className={variant === "logo" ? "object-contain p-6" : "object-cover object-center"}
             onError={() => setError(true)}
           />
         </div>

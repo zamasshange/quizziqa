@@ -63,12 +63,23 @@ export function upsizeWikiImage(url: string, targetWidth = 800): string {
   return url.replace(/\/(\d+)px-/, `/${targetWidth}px-`);
 }
 
-export type MediaVariant = "flag" | "portrait" | "landscape" | "square" | "emoji" | "logo";
+export type MediaVariant = "flag" | "portrait" | "landscape" | "square" | "emoji" | "logo" | "text";
 
 export function inferMediaVariant(
   gameSlug: string,
-  gameMode?: string
+  gameMode?: string,
+  opts?: { hasImage?: boolean; hasEmoji?: boolean }
 ): MediaVariant {
+  if (opts?.hasEmoji) return "emoji";
+  if (!opts?.hasImage && !opts?.hasEmoji) {
+    if (
+      gameMode === "multiple-choice" ||
+      gameSlug.includes("quote") ||
+      gameSlug.includes("trivia")
+    ) {
+      return "text";
+    }
+  }
   if (gameSlug.includes("flag") || gameSlug === "world-flags") return "flag";
   if (gameMode === "guess-from-emoji") return "emoji";
   if (gameSlug.includes("logo") || gameSlug.includes("brand")) return "logo";
@@ -76,13 +87,15 @@ export function inferMediaVariant(
     gameSlug.includes("celebrity") ||
     gameSlug.includes("athlete") ||
     gameSlug.includes("scientist") ||
-    gameSlug.includes("painting")
+    gameSlug.includes("painting") ||
+    gameSlug.includes("president")
   ) {
     return "portrait";
   }
   if (
     gameSlug.includes("landmark") ||
     gameSlug.includes("city") ||
+    gameSlug.includes("capital") ||
     gameSlug.includes("planet") ||
     gameSlug.includes("food")
   ) {
@@ -90,6 +103,15 @@ export function inferMediaVariant(
   }
   if (gameSlug.includes("animal") || gameSlug.includes("flower")) {
     return "square";
+  }
+  if (gameSlug.includes("phone") || gameSlug.includes("video-game")) {
+    return "square";
+  }
+  if (gameSlug.includes("movie") || gameSlug.includes("tv")) {
+    return "landscape";
+  }
+  if (gameSlug.includes("brand") || gameSlug.includes("tech")) {
+    return "logo";
   }
   return "portrait";
 }

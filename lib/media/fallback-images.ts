@@ -43,6 +43,36 @@ export const fallbackImages: Record<string, string> = {
     "https://upload.wikimedia.org/wikipedia/commons/2/23/Robert_Downey_Jr._2014_Comic-Con.jpg",
   Jennifer_Lawrence:
     "https://upload.wikimedia.org/wikipedia/commons/f/fe/Jennifer_Lawrence_in_2018.png",
+  George_Washington:
+    "https://upload.wikimedia.org/wikipedia/commons/b/b6/Gilbert_Stuart_Williamstown_Portrait_of_George_Washington.jpg",
+  Abraham_Lincoln:
+    "https://upload.wikimedia.org/wikipedia/commons/a/ab/Abraham_Lincoln_O-77_matte_collodion_print.jpg",
+  "Franklin_D._Roosevelt":
+    "https://upload.wikimedia.org/wikipedia/commons/4/42/FDR_1944_Color_Portrait.jpg",
+  "John_F._Kennedy":
+    "https://upload.wikimedia.org/wikipedia/commons/c/c3/John_F._Kennedy%2C_White_House_color_photo_portrait.jpg",
+  Joe_Biden:
+    "https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg",
+  Donald_Trump:
+    "https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg",
+  Thomas_Jefferson:
+    "https://upload.wikimedia.org/wikipedia/commons/b/b1/Official_Presidential_portrait_of_Thomas_Jefferson_%28by_Rembrandt_Peale%2C_1800%29%28cropped%29.jpg",
+  Theodore_Roosevelt:
+    "https://upload.wikimedia.org/wikipedia/commons/1/1c/President_Roosevelt_-_Pach_Bros.jpg",
+  Ronald_Reagan:
+    "https://upload.wikimedia.org/wikipedia/commons/1/16/Official_Portrait_of_President_Reagan_1981.jpg",
+  Winston_Churchill:
+    "https://upload.wikimedia.org/wikipedia/commons/b/bc/Sir_Winston_Churchill_-_19086236948.jpg",
+  Nelson_Mandela:
+    "https://upload.wikimedia.org/wikipedia/commons/0/02/Nelson_Mandela_1994.jpg",
+  Charles_de_Gaulle:
+    "https://upload.wikimedia.org/wikipedia/commons/2/2f/Charles_de_Gaulle-1963.jpg",
+  Volodymyr_Zelenskyy:
+    "https://upload.wikimedia.org/wikipedia/commons/9/9c/Volodymyr_Zelensky_Official_portrait.jpg",
+  Emmanuel_Macron:
+    "https://upload.wikimedia.org/wikipedia/commons/7/7e/Emmanuel_Macron_portrait_%28cropped%29.jpg",
+  Justin_Trudeau:
+    "https://upload.wikimedia.org/wikipedia/commons/8/8a/Justin_Trudeau_2019.jpg",
 };
 
 export function getFallbackImage(wikiTitle: string): string | undefined {

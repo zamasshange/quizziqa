@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { PlayModeBody } from "@/components/play-mode-body";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 
@@ -40,8 +41,10 @@ export default function RootLayout({
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
       </head>
       <body className="antialiased">
-        <PlayModeBody playMode={false} />
-        {children}
+        <QueryProvider>
+          <PlayModeBody playMode={false} />
+          {children}
+        </QueryProvider>
         <ServiceWorkerRegister />
       </body>
     </html>

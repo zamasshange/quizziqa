@@ -95,6 +95,7 @@ export interface PlayerStats {
   totalAnswers: number;
   favoriteCategory: string;
   achievements: string[];
+  coins?: number;
 }
 
 export interface DailyChallenge {

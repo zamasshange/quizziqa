@@ -8,7 +8,7 @@ import {
   getFeaturedGamesMeta,
   getTrendingGamesMeta,
   getNewGamesMeta,
-  getDynamicTemplates,
+  getSortedDynamicTemplates,
 } from "@/lib/games/registry";
 import { collections } from "@/lib/data/collections";
 import { siteStats } from "@/lib/data/stats";
@@ -20,7 +20,7 @@ export default function HomePage() {
   const featured = getFeaturedGamesMeta();
   const trending = getTrendingGamesMeta();
   const recentlyAdded = getNewGamesMeta();
-  const guessTheGames = getDynamicTemplates();
+  const guessTheGames = getSortedDynamicTemplates();
   const continueGame = guessTheGames.find((g) => g.slug === "guess-the-celebrity") ?? featured[0];
 
   return (
