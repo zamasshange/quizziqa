@@ -17,62 +17,105 @@ interface QuestionMediaProps {
   frameless?: boolean;
 }
 
-type LoadPhase = "direct" | "proxy" | "failed";
+const LOAD_TIMEOUT_MS = 8000;
+
+/** Fetch image with hard timeout — img tags can hang forever without onError. */
+async function fetchImageBlob(url: string): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      credentials: "same-origin",
+      cache: "force-cache",
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (!blob.size || !blob.type.startsWith("image/")) return null;
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: string }) {
   const directSrc =
-    fallbackSrc?.startsWith("https://upload.wikimedia.org/") ||
-    fallbackSrc?.startsWith("http")
+    fallbackSrc?.startsWith("https://") || fallbackSrc?.startsWith("http://")
       ? fallbackSrc
       : undefined;
   const proxySrc = wikiKey ? getMediaProxyUrl(wikiKey) : undefined;
 
-  const initialSrc = directSrc ?? proxySrc ?? "";
-  const [currentSrc, setCurrentSrc] = useState(initialSrc);
-  const [phase, setPhase] = useState<LoadPhase>(
-    directSrc ? "direct" : proxySrc ? "proxy" : "failed"
-  );
-  const [loaded, setLoaded] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [blobSrc, setBlobSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const blobRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const nextDirect =
-      fallbackSrc?.startsWith("http") ? fallbackSrc : undefined;
-    const nextProxy = wikiKey ? getMediaProxyUrl(wikiKey) : undefined;
-    setCurrentSrc(nextDirect ?? nextProxy ?? "");
-    setPhase(nextDirect ? "direct" : nextProxy ? "proxy" : "failed");
-    setLoaded(false);
-  }, [wikiKey, fallbackSrc]);
+    let cancelled = false;
 
-  // If direct CDN hangs, switch to same-origin proxy after 6s
-  useEffect(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (phase !== "direct" || loaded || !proxySrc) return;
-
-    timeoutRef.current = setTimeout(() => {
-      if (!loaded && proxySrc && currentSrc === directSrc) {
-        setPhase("proxy");
-        setCurrentSrc(proxySrc);
-        setLoaded(false);
+    const revoke = () => {
+      if (blobRef.current) {
+        URL.revokeObjectURL(blobRef.current);
+        blobRef.current = null;
       }
-    }, 6000);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [phase, loaded, proxySrc, directSrc, currentSrc]);
 
-  const handleError = () => {
-    if (phase === "direct" && proxySrc) {
-      setPhase("proxy");
-      setCurrentSrc(proxySrc);
-      setLoaded(false);
+    revoke();
+    setBlobSrc(null);
+    setFailed(false);
+    setLoading(true);
+
+    // Same-origin proxy first (reliable on Vercel + mobile), then direct CDN
+    const candidates = [proxySrc, directSrc].filter(
+      (u, i, arr): u is string => !!u && arr.indexOf(u) === i
+    );
+
+    if (candidates.length === 0) {
+      setFailed(true);
+      setLoading(false);
       return;
     }
-    setPhase("failed");
-  };
 
-  if (!currentSrc || phase === "failed") {
+    (async () => {
+      for (const url of candidates) {
+        if (cancelled) return;
+        const blob = await fetchImageBlob(url);
+        if (cancelled) {
+          if (blob) URL.revokeObjectURL(blob);
+          return;
+        }
+        if (blob) {
+          blobRef.current = blob;
+          setBlobSrc(blob);
+          setLoading(false);
+          return;
+        }
+      }
+      if (!cancelled) {
+        setFailed(true);
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      revoke();
+    };
+  }, [wikiKey, fallbackSrc, proxySrc, directSrc]);
+
+  if (failed || !blobSrc) {
+    if (loading) {
+      return (
+        <div className="relative w-full h-full flex items-center justify-center min-h-[120px]">
+          <div className="flex flex-col items-center justify-center gap-2 animate-pulse">
+            <span className="text-2xl opacity-40">📷</span>
+            <span className="text-[10px] font-bold text-black/30">Loading…</span>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center w-full h-full min-h-[100px] text-black/35 py-6">
         <span className="text-2xl">📷</span>
@@ -83,27 +126,13 @@ function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: 
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      {!loaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-black/[0.04] animate-pulse">
-          <span className="text-2xl opacity-40">📷</span>
-          <span className="text-[10px] font-bold text-black/30">Loading…</span>
-        </div>
-      )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        key={currentSrc}
-        src={currentSrc}
+        src={blobSrc}
         alt=""
         role="presentation"
-        className={cn(
-          "block max-w-full max-h-full w-auto h-auto object-contain mx-auto transition-opacity duration-200",
-          loaded ? "opacity-100" : "opacity-0"
-        )}
-        onLoad={() => setLoaded(true)}
-        onError={handleError}
+        className="block max-w-full max-h-full w-auto h-auto object-contain mx-auto"
         decoding="async"
-        loading="eager"
-        fetchPriority="high"
       />
     </div>
   );
@@ -210,9 +239,7 @@ export function QuestionMedia({
       <div
         className={cn(
           "relative flex items-center justify-center overflow-hidden mx-auto",
-          frameless
-            ? sizeClass
-            : cn("rounded-xl bg-white p-2 border border-black/10", sizeClass)
+          frameless ? sizeClass : cn("rounded-xl", sizeClass)
         )}
       >
         <MediaImage wikiKey={wikiKey} fallbackSrc={image} />
