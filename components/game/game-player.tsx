@@ -452,7 +452,7 @@ export function GamePlayer({
         />
       ) : (
         <div className="relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 md:px-5 pt-2 pb-2">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 md:px-5 pt-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-4">
             <div className="flex items-start justify-center gap-4 max-w-6xl mx-auto w-full">
               <PlaySidePanel
                 level={playerLevel}
@@ -464,18 +464,33 @@ export function GamePlayer({
                 isDaily={isDaily}
               />
 
-              <div className="play-game-card flex-1 min-w-0 flex flex-col md:flex-row items-center gap-3 md:gap-6 p-3 md:p-6">
-                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:max-w-[48%]">
-                  <div className="play-media-frame">
-                    <QuestionMedia
-                      key={question.id}
-                      wikiKey={wikiFromQuestionId(question.id)}
-                      image={question.image}
-                      emoji={question.emoji}
-                      text={question.question}
-                      alt={question.answer}
-                      variant={mediaVariant}
-                    />
+              <div className="play-game-card flex-1 min-w-0 flex flex-col md:flex-row items-stretch gap-2 md:gap-6 p-2.5 md:p-6">
+                <div className="relative shrink-0 md:flex-1 md:max-w-[48%]">
+                  <div className="flex flex-row md:flex-col items-start gap-2.5 md:gap-0">
+                    <div className="play-media-frame shrink-0 p-1">
+                      <QuestionMedia
+                        key={question.id}
+                        compact
+                        wikiKey={wikiFromQuestionId(question.id)}
+                        image={question.image}
+                        emoji={question.emoji}
+                        text={question.question}
+                        alt=""
+                        variant={mediaVariant}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 md:hidden pt-0.5">
+                      <PlayQuestionHeader
+                        categoryEmoji={categoryEmoji}
+                        categoryName={categoryName}
+                        gameTitle={initialGame.title}
+                        questionText={question.question}
+                        difficulty={settings.difficulty}
+                        isTextRound={isTextRound}
+                        questionId={question.id}
+                        animateEntry={animateEntry}
+                      />
+                    </div>
                   </div>
 
                   {(hintText || hintLoading) && (
@@ -499,17 +514,19 @@ export function GamePlayer({
                   )}
                 </div>
 
-                <div className="w-full md:flex-1 md:max-w-[48%] flex flex-col gap-2 md:gap-3">
-                  <PlayQuestionHeader
-                    categoryEmoji={categoryEmoji}
-                    categoryName={categoryName}
-                    gameTitle={initialGame.title}
-                    questionText={question.question}
-                    difficulty={settings.difficulty}
-                    isTextRound={isTextRound}
-                    questionId={question.id}
-                    animateEntry={animateEntry}
-                  />
+                <div className="w-full md:flex-1 md:max-w-[48%] flex flex-col gap-1.5 md:gap-3">
+                  <div className="hidden md:block">
+                    <PlayQuestionHeader
+                      categoryEmoji={categoryEmoji}
+                      categoryName={categoryName}
+                      gameTitle={initialGame.title}
+                      questionText={question.question}
+                      difficulty={settings.difficulty}
+                      isTextRound={isTextRound}
+                      questionId={question.id}
+                      animateEntry={animateEntry}
+                    />
+                  </div>
 
                   <PlayAnswerGrid
                     options={options}

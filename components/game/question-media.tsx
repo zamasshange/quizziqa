@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getManifestImage } from "@/lib/media/image-manifest";
 import { getMediaProxyUrl } from "@/lib/media/media-url";
 import type { MediaVariant } from "@/lib/media/images";
 
@@ -14,47 +13,26 @@ interface QuestionMediaProps {
   variant: MediaVariant;
   className?: string;
   wikiKey?: string;
+  compact?: boolean;
 }
 
-function MediaImage({
-  src,
-  alt,
-  className,
-  wikiKey,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-  wikiKey?: string;
-}) {
+function MediaImage({ src, wikiKey }: { src: string; wikiKey?: string }) {
   const [currentSrc, setCurrentSrc] = useState(src);
+  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     setCurrentSrc(src);
+    setLoaded(false);
     setFailed(false);
-    setAttempt(0);
   }, [src]);
 
   const handleError = () => {
-    if (!wikiKey) {
-      setFailed(true);
-      return;
-    }
-    if (attempt === 0) {
-      const manifest = getManifestImage(wikiKey);
-      if (manifest && manifest !== currentSrc) {
-        setAttempt(1);
-        setCurrentSrc(manifest);
-        return;
-      }
-    }
-    if (attempt <= 1) {
+    if (wikiKey) {
       const proxy = getMediaProxyUrl(wikiKey);
       if (proxy !== currentSrc) {
-        setAttempt(2);
         setCurrentSrc(proxy);
+        setLoaded(false);
         return;
       }
     }
@@ -63,35 +41,82 @@ function MediaImage({
 
   if (failed) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-secondary text-black/40">
-        <span className="text-2xl">📷</span>
-        <span className="text-[10px] font-bold mt-1">Image unavailable</span>
+      <div className="flex flex-col items-center justify-center w-full h-full min-h-[80px] text-black/35 py-4">
+        <span className="text-xl">📷</span>
+        <span className="text-[9px] font-bold mt-1">Image unavailable</span>
       </div>
     );
   }
 
   return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img
-      src={currentSrc}
-      alt={alt}
-      className={cn("absolute inset-0 w-full h-full", className)}
-      onError={handleError}
-      decoding="async"
-      loading="eager"
-      fetchPriority="high"
-    />
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-secondary/60 animate-pulse rounded-[inherit]" />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={currentSrc}
+        alt=""
+        role="presentation"
+        className={cn(
+          "block max-w-full max-h-full w-auto h-auto object-contain mx-auto",
+          loaded ? "opacity-100" : "opacity-0",
+          "transition-opacity duration-200"
+        )}
+        onLoad={() => setLoaded(true)}
+        onError={handleError}
+        decoding="async"
+        loading="eager"
+        fetchPriority="high"
+      />
+    </>
   );
 }
+
+const FRAME: Record<
+  MediaVariant,
+  { normal: string; compact: string }
+> = {
+  flag: {
+    normal: "w-[220px] sm:w-[280px] h-[140px] sm:h-[175px]",
+    compact: "w-[160px] h-[100px]",
+  },
+  landscape: {
+    normal: "w-full max-w-[280px] sm:max-w-[340px] h-[160px] sm:h-[200px]",
+    compact: "w-full max-w-[200px] h-[120px]",
+  },
+  food: {
+    normal: "w-full max-w-[260px] sm:max-w-[320px] h-[160px] sm:h-[190px]",
+    compact: "w-full max-w-[200px] h-[120px]",
+  },
+  square: {
+    normal: "w-[160px] sm:w-[220px] h-[160px] sm:h-[220px]",
+    compact: "w-[130px] h-[130px]",
+  },
+  product: {
+    normal: "w-[130px] sm:w-[160px] h-[200px] sm:h-[240px]",
+    compact: "w-[100px] h-[150px]",
+  },
+  logo: {
+    normal: "w-[140px] sm:w-[180px] h-[140px] sm:h-[180px]",
+    compact: "w-[110px] h-[110px]",
+  },
+  portrait: {
+    normal: "w-[130px] sm:w-[180px] h-[170px] sm:h-[230px]",
+    compact: "w-[100px] h-[130px]",
+  },
+  emoji: { normal: "", compact: "" },
+  text: { normal: "", compact: "" },
+};
 
 export function QuestionMedia({
   image,
   emoji,
-  alt = "",
   text,
   variant,
   className,
   wikiKey,
+  compact = false,
 }: QuestionMediaProps) {
   if (variant === "text" && text) {
     const quoteMatch = text.match(/^("[^"]+"|'[^']+')/);
@@ -102,12 +127,10 @@ export function QuestionMedia({
 
     return (
       <div className={cn("flex items-center justify-center", className)}>
-        <div className="w-[280px] sm:w-[340px] md:w-[400px] px-6 py-8 md:py-10 rounded-2xl bg-secondary border border-black/15 shadow-soft-1 text-center">
-          <p className="text-xl md:text-2xl font-black text-black leading-snug italic">
-            {quote}
-          </p>
+        <div className="w-full max-w-[320px] px-5 py-6 rounded-2xl bg-secondary border border-black/15 shadow-soft-1 text-center">
+          <p className="text-lg font-black text-black leading-snug italic">{quote}</p>
           {prompt && (
-            <p className="mt-4 text-sm font-bold text-black/60">{prompt}</p>
+            <p className="mt-3 text-xs font-bold text-black/60">{prompt}</p>
           )}
         </div>
       </div>
@@ -119,11 +142,11 @@ export function QuestionMedia({
       <div
         className={cn(
           "flex items-center justify-center rounded-2xl border-2 border-black/15 bg-secondary",
-          "w-full max-w-[280px] aspect-square mx-auto",
+          compact ? "w-[120px] h-[120px]" : "w-[160px] h-[160px] sm:w-[200px] sm:h-[200px]",
           className
         )}
       >
-        <span className="text-6xl md:text-7xl">{emoji}</span>
+        <span className={compact ? "text-5xl" : "text-6xl md:text-7xl"}>{emoji}</span>
       </div>
     );
   }
@@ -132,53 +155,30 @@ export function QuestionMedia({
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-black/15 bg-secondary",
-          "w-full max-w-[280px] aspect-[4/3] mx-auto text-black/40 min-h-[120px]",
+          "flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-black/15 bg-secondary text-black/40",
+          compact ? "w-[130px] h-[100px]" : "w-[160px] h-[120px] sm:w-[200px] sm:h-[150px]",
           className
         )}
       >
-        <span className="text-3xl">📷</span>
-        <span className="text-xs font-bold">No image</span>
+        <span className="text-2xl">📷</span>
+        <span className="text-[9px] font-bold">No image</span>
       </div>
     );
   }
 
-  const frameClass = cn(
-    "relative overflow-hidden shadow-soft-1 ring-1 ring-black/10 bg-white",
-    variant === "flag" && "w-[240px] sm:w-[300px] aspect-[3/2] rounded-sm",
-    variant === "landscape" &&
-      "w-full max-w-[320px] sm:max-w-[400px] aspect-[4/3] rounded-xl",
-    variant === "food" &&
-      "w-full max-w-[300px] sm:max-w-[360px] aspect-[4/3] rounded-xl",
-    variant === "square" &&
-      "w-[200px] sm:w-[260px] aspect-square rounded-xl",
-    variant === "product" &&
-      "w-[150px] sm:w-[200px] md:w-[240px] aspect-[9/16] max-h-[42vh] rounded-xl",
-    variant === "logo" &&
-      "w-[180px] sm:w-[240px] aspect-square rounded-xl",
-    variant === "portrait" &&
-      "w-[160px] sm:w-[220px] md:w-[280px] aspect-[3/4] max-h-[36vh] md:max-h-none rounded-xl"
-  );
-
-  const imgClass = cn(
-    variant === "logo" && "object-contain p-5 bg-white",
-    variant === "product" && "object-contain p-3 bg-white",
-    variant === "food" && "object-contain p-1 bg-white",
-    variant === "flag" && "object-cover",
-    variant === "landscape" && "object-cover object-center",
-    variant === "square" && "object-cover object-center",
-    variant === "portrait" && "object-cover object-top"
-  );
+  const frame = FRAME[variant] ?? FRAME.landscape;
+  const sizeClass = compact ? frame.compact : frame.normal;
 
   return (
-    <div className={cn("flex items-center justify-center", className)}>
-      <div className={frameClass}>
-        <MediaImage
-          src={image}
-          alt={alt || "Guess this"}
-          className={imgClass}
-          wikiKey={wikiKey}
-        />
+    <div className={cn("flex items-center justify-center shrink-0", className)}>
+      <div
+        className={cn(
+          "relative flex items-center justify-center overflow-hidden",
+          "rounded-xl shadow-soft-1 ring-1 ring-black/10 bg-white p-1.5",
+          sizeClass
+        )}
+      >
+        <MediaImage src={image} wikiKey={wikiKey} />
       </div>
     </div>
   );
