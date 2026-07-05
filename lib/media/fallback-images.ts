@@ -2,6 +2,8 @@
  * Curated Wikimedia URLs — used when live Wikipedia fetch misses an image.
  * Keys match entity `wiki` titles (underscores).
  */
+import { entityImages } from "@/lib/media/entity-images";
+
 export const fallbackImages: Record<string, string> = {
   Leonardo_DiCaprio:
     "https://upload.wikimedia.org/wikipedia/commons/4/46/Leonardo_Dicaprio_Cannes_2019.jpg",
@@ -96,5 +98,5 @@ export const fallbackImages: Record<string, string> = {
 };
 
 export function getFallbackImage(wikiTitle: string): string | undefined {
-  return fallbackImages[wikiTitle];
+  return entityImages[wikiTitle] ?? fallbackImages[wikiTitle];
 }

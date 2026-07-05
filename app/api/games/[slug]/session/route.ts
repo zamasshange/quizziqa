@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { getGameBySlugAsync } from "@/lib/games/registry";
 import { getTemplateBySlug } from "@/lib/games/templates";
 import { buildFullQuestionPool } from "@/lib/games/builder";
+import { ensureQuestionImages } from "@/lib/media/resolve-image";
 import type { Game } from "@/lib/types";
 
 const getCachedPool = unstable_cache(
@@ -11,7 +12,7 @@ const getCachedPool = unstable_cache(
     if (!template) return null;
     return buildFullQuestionPool(template);
   },
-  ["question-pool-v2"],
+  ["question-pool-v3"],
   { revalidate: 86400, tags: ["question-pools"] }
 );
 
@@ -33,12 +34,12 @@ export async function GET(
   if (template) {
     const fullPool = await getCachedPool(slug);
     if (fullPool && fullPool.length > 0) {
-      pool = fullPool.filter((q) => !!q.image || !!q.emoji);
+      pool = ensureQuestionImages(fullPool);
     }
   }
 
   if (pool.length === 0) {
-    pool = game.questions.filter((q) => !!q.image || !!q.emoji);
+    pool = ensureQuestionImages(game.questions);
   }
 
   const sessionGame = {

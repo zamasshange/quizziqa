@@ -14,7 +14,9 @@ import {
   getAnswerPool,
   recordSessionQuestions,
 } from "@/lib/game/question-engine";
-import { preloadImageLink, preloadImages, preloadImagesAndWait } from "@/lib/game/image-cache";
+import { preloadImageLink, preloadImages } from "@/lib/game/image-cache";
+import { ensureQuestionImages, wikiFromQuestionId } from "@/lib/media/resolve-image";
+import { DEFAULT_SETTINGS } from "@/lib/game/settings";
 import { audioManager } from "@/lib/audio/audio-manager";
 import { PlayHud } from "@/components/game/play/play-hud";
 import { PlayAnswerGrid } from "@/components/game/play/play-answer-grid";
@@ -34,6 +36,11 @@ interface GamePlayerProps {
 
 type RoundState = "playing" | "correct" | "incorrect" | "finished";
 
+function buildInitialSession(game: Game, count: number) {
+  const pool = ensureQuestionImages(game.questions);
+  return buildSessionQueue(pool, game.slug, count);
+}
+
 export function GamePlayer({
   game: initialGame,
   isDaily,
@@ -44,9 +51,12 @@ export function GamePlayer({
   const { stats, hydrated, recordGame } = usePlayerProgress();
   const { settings, hydrated: settingsHydrated } = useGameSettings();
 
-  const [pool, setPool] = useState<GameQuestion[]>([]);
-  const [sessionQuestions, setSessionQuestions] = useState<GameQuestion[]>([]);
-  const [sessionReady, setSessionReady] = useState(false);
+  const [pool, setPool] = useState<GameQuestion[]>(() =>
+    ensureQuestionImages(initialGame.questions)
+  );
+  const [sessionQuestions, setSessionQuestions] = useState<GameQuestion[]>(() =>
+    buildInitialSession(initialGame, DEFAULT_SETTINGS.questionCount)
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roundState, setRoundState] = useState<RoundState>("playing");
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -84,7 +94,17 @@ export function GamePlayer({
   const freezeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordedRef = useRef(false);
   const answerTimeRef = useRef(Date.now());
-  const answerPoolRef = useRef<string[]>(getAnswerPool(initialGame.questions));
+  const answerPoolRef = useRef<string[]>(
+    getAnswerPool(ensureQuestionImages(initialGame.questions))
+  );
+
+  useEffect(() => {
+    preloadImages(sessionQuestions.slice(0, 4).map((q) => q.image));
+    sessionQuestions.slice(0, 2).forEach((q) => {
+      if (q.image) preloadImageLink(q.image);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- warm cache once on mount
+  }, []);
 
   const question = sessionQuestions[currentIndex];
   const backHref = categorySlug ? `/categories/${categorySlug}` : "/categories";
@@ -110,21 +130,19 @@ export function GamePlayer({
     [timerLimit]
   );
 
-  // Fetch full pool + build session once settings are loaded
+  // Background: fetch full pool and upgrade session (never blocks UI)
   useEffect(() => {
     if (!settingsHydrated) return;
     let cancelled = false;
 
     (async () => {
-      setSessionReady(false);
       try {
         const res = await fetch(
           `/api/games/${initialGame.slug}/session?count=${settings.questionCount}`
         );
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as Game & { questions: GameQuestion[] };
-        const withMedia = (data.questions ?? []).filter((q) => q.image || q.emoji);
-        const source = withMedia.length > 0 ? withMedia : initialGame.questions.filter((q) => q.image || q.emoji);
+        const source = ensureQuestionImages(data.questions ?? []);
         if (cancelled || source.length === 0) return;
 
         setPool(source);
@@ -132,32 +150,18 @@ export function GamePlayer({
         const session = buildSessionQueue(source, initialGame.slug, settings.questionCount);
         if (session.length === 0 || cancelled) return;
 
-        await preloadImagesAndWait(session.slice(0, 3).map((q) => q.image));
-        if (cancelled) return;
-
         setSessionQuestions(session);
         setCurrentIndex(0);
-        setSessionReady(true);
-        preloadImages(session.slice(3, 6).map((q) => q.image));
+        preloadImages(session.slice(0, 5).map((q) => q.image));
       } catch {
-        const fallback = buildSessionQueue(
-          initialGame.questions.filter((q) => q.image || q.emoji),
-          initialGame.slug,
-          settings.questionCount
-        );
-        if (!cancelled && fallback.length > 0) {
-          await preloadImagesAndWait(fallback.slice(0, 2).map((q) => q.image));
-          setSessionQuestions(fallback);
-          setPool(initialGame.questions);
-          setSessionReady(true);
-        }
+        /* keep SSR session */
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [initialGame.slug, initialGame.questions, settings.questionCount, settingsHydrated]);
+  }, [initialGame.slug, settings.questionCount, settingsHydrated]);
 
   useEffect(() => {
     if (settingsHydrated && timerLimit) setTimeLeft(timerLimit);
@@ -288,7 +292,8 @@ export function GamePlayer({
   }, [currentIndex, sessionQuestions, initialGame.slug]);
 
   const startNewSession = useCallback(() => {
-    const session = buildSessionQueue(pool, initialGame.slug, settings.questionCount);
+    const source = pool.length > 0 ? pool : ensureQuestionImages(initialGame.questions);
+    const session = buildSessionQueue(source, initialGame.slug, settings.questionCount);
     setSessionQuestions(session);
     setCurrentIndex(0);
     setRoundState("playing");
@@ -396,11 +401,10 @@ export function GamePlayer({
 
   const maxHints = settings.hintsEnabled ? initialGame.maxHints : 0;
 
-  if (!sessionReady || (!question && roundState !== "finished")) {
+  if (!question && roundState !== "finished") {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 text-black/50">
-        <div className="w-10 h-10 rounded-full border-4 border-black/10 border-t-btn-green animate-spin" />
-        <p className="font-bold text-sm">Loading game…</p>
+      <div className="flex-1 flex items-center justify-center text-black/50 font-bold text-sm">
+        Preparing questions…
       </div>
     );
   }
@@ -466,6 +470,7 @@ export function GamePlayer({
                     <QuestionMedia
                       key={question.id}
                       questionKey={question.id}
+                      wikiKey={wikiFromQuestionId(question.id)}
                       image={question.image}
                       emoji={question.emoji}
                       text={question.question}

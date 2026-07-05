@@ -5,8 +5,8 @@ import {
   fetchWikiEntities,
   fetchFlagImages,
 } from "@/lib/wikipedia/client";
-import { getFallbackImage } from "@/lib/media/fallback-images";
 import { getFlagUrl } from "@/lib/media/images";
+import { resolveEntityImage } from "@/lib/media/resolve-image";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -74,11 +74,11 @@ async function buildQuestionsFromEntities(
     const entity = entities[i];
     const wiki = wikiData.get(entity.wiki);
     const answer = entity.answer ?? entity.wiki.replace(/_/g, " ");
-    const flagUrl = template.useFlags ? getFlagUrl(answer) || getFlagUrl(entity.wiki.replace(/_/g, " ")) : "";
-    const image =
-      (template.useFlags ? flagImages.get(entity.wiki) || flagUrl || undefined : undefined) ??
-      wiki?.image ??
-      getFallbackImage(entity.wiki);
+    const flagUrl = template.useFlags ? getFlagUrl(answer) : "";
+    const image = resolveEntityImage(entity.wiki, answer, {
+      flagUrl: flagUrl || undefined,
+      wikiImage: wiki?.image,
+    });
 
     if (!image && template.mode === "guess-from-image") continue;
 

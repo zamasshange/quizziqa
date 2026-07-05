@@ -3,6 +3,7 @@ import type { Game, GameMeta, GameMode } from "@/lib/types";
 import { games as staticGames, getGameBySlug as getStaticGame } from "@/lib/data/games";
 import { gameTemplates, getTemplateBySlug } from "@/lib/games/templates";
 import { buildGameFromTemplate } from "@/lib/games/builder";
+import { ensureQuestionImages } from "@/lib/media/resolve-image";
 
 /** Legacy slugs → Wikipedia-powered replacements */
 const SLUG_ALIASES: Record<string, string> = {
@@ -20,7 +21,7 @@ const getCachedDynamicGame = unstable_cache(
     if (!template) return null;
     return buildGameFromTemplate(template);
   },
-  ["dynamic-game-v7"],
+  ["dynamic-game-v8"],
   { revalidate: 86400, tags: ["wikipedia-games"] }
 );
 
@@ -32,9 +33,13 @@ export async function getGameBySlugAsync(slug: string): Promise<Game | null> {
   if (template) {
     const game = await getCachedDynamicGame(resolved);
     if (!game) return null;
+    const withImages = {
+      ...game,
+      questions: ensureQuestionImages(game.questions),
+    };
     if (legacyStatic) {
       return {
-        ...game,
+        ...withImages,
         slug: legacyStatic.slug,
         title: legacyStatic.title,
         id: legacyStatic.id,
@@ -42,7 +47,7 @@ export async function getGameBySlugAsync(slug: string): Promise<Game | null> {
         trending: legacyStatic.trending ?? game.trending,
       };
     }
-    return game;
+    return withImages;
   }
 
   const staticGame = getStaticGame(slug);
