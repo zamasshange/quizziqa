@@ -343,90 +343,119 @@ export function GamePlayer({
           onReplay={handleRestart}
         />
       ) : (
-        <div className="relative z-10 flex-1 min-h-0 flex items-center justify-center px-3 md:px-5 pb-3 gap-4 max-w-6xl mx-auto w-full">
-          <PlaySidePanel
-            level={playerLevel}
-            xp={playerXp + sessionXp}
-            streak={playerStreak}
-            categoryName={categoryName}
-            categoryEmoji={categoryEmoji}
-            collectedThisSession={collected}
-            isDaily={isDaily}
-          />
+        <div className="relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 md:px-5 pt-2 pb-2">
+            <div className="flex items-start justify-center gap-4 max-w-6xl mx-auto w-full">
+              <PlaySidePanel
+                level={playerLevel}
+                xp={playerXp + sessionXp}
+                streak={playerStreak}
+                categoryName={categoryName}
+                categoryEmoji={categoryEmoji}
+                collectedThisSession={collected}
+                isDaily={isDaily}
+              />
 
-          <div className="play-game-card flex-1 min-h-0 flex flex-col md:flex-row items-center gap-4 md:gap-6 p-4 md:p-6 overflow-hidden">
-            {/* Media */}
-            <div className="relative shrink-0 flex items-center justify-center md:flex-1 md:max-w-[48%]">
-              <div className="play-media-frame">
-                <QuestionMedia
-                  image={question.image}
-                  emoji={question.emoji}
-                  text={question.question}
-                  alt={question.answer}
-                  variant={mediaVariant}
-                />
-              </div>
+              <div className="play-game-card flex-1 min-w-0 flex flex-col md:flex-row items-center gap-3 md:gap-6 p-3 md:p-6">
+                {/* Media */}
+                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:max-w-[48%]">
+                  <div className="play-media-frame">
+                    <QuestionMedia
+                      image={question.image}
+                      emoji={question.emoji}
+                      text={question.question}
+                      alt={question.answer}
+                      variant={mediaVariant}
+                    />
+                  </div>
 
-              {(hintText || hintLoading) && (
-                <div className="absolute -bottom-2 inset-x-0 z-10 mx-auto max-w-[95%] bg-answer4/95 text-black rounded-xl px-3 py-2 text-[11px] font-bold border-2 border-black shadow-lg flex items-start gap-1.5">
-                  <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                  <span className="flex-1 line-clamp-2">
-                    {hintLoading ? "Thinking…" : hintText}
-                  </span>
-                  {hintText && (
-                    <button type="button" onClick={() => setHintText(null)} aria-label="Close">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                  {(hintText || hintLoading) && (
+                    <div className="absolute -bottom-2 inset-x-0 z-10 mx-auto max-w-[95%] bg-answer4/95 text-black rounded-xl px-3 py-2 text-[11px] font-bold border-2 border-black shadow-lg flex items-start gap-1.5">
+                      <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <span className="flex-1 line-clamp-2">
+                        {hintLoading ? "Thinking…" : hintText}
+                      </span>
+                      {hintText && (
+                        <button type="button" onClick={() => setHintText(null)} aria-label="Close">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {showReveal && categoryName && (
+                    <div className="absolute top-2 inset-x-2 z-10 bg-btn-cyan/90 text-black text-xs font-black text-center py-1.5 rounded-full border-2 border-black">
+                      Category: {categoryName}
+                    </div>
                   )}
                 </div>
-              )}
 
-              {showReveal && categoryName && (
-                <div className="absolute top-2 inset-x-2 z-10 bg-btn-cyan/90 text-black text-xs font-black text-center py-1.5 rounded-full border-2 border-black">
-                  Category: {categoryName}
+                {/* Answers */}
+                <div className="w-full md:flex-1 md:max-w-[48%] flex flex-col gap-2 md:gap-3">
+                  <PlayQuestionHeader
+                    categoryEmoji={categoryEmoji}
+                    categoryName={categoryName}
+                    gameTitle={game.title}
+                    questionText={question.question}
+                    difficulty={question.difficulty}
+                    isTextRound={isTextRound}
+                  />
+
+                  <PlayAnswerGrid
+                    options={options}
+                    correctAnswer={question.answer}
+                    selectedAnswer={selectedAnswer}
+                    revealed={roundState === "correct" || roundState === "incorrect"}
+                    disabled={roundState !== "playing"}
+                    onSelect={handleAnswer}
+                  />
+
+                  {/* Desktop: power-ups inline */}
+                  {roundState === "playing" && (
+                    <div className="hidden md:block">
+                      <PlayPowerUps
+                        hintsLeft={game.maxHints - hintsUsed}
+                        skipsLeft={game.maxSkips - skipsUsed}
+                        fiftyLeft={1 - fiftyUsed}
+                        freezeLeft={game.timeLimit ? 1 - freezeUsed : 0}
+                        revealLeft={1 - revealUsed}
+                        doubleActive={doubleXpActive}
+                        hintLoading={hintLoading}
+                        onHint={handleHint}
+                        onSkip={handleSkip}
+                        onFifty={handleFifty}
+                        onFreeze={handleFreeze}
+                        onReveal={handleReveal}
+                        onDouble={handleDouble}
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* Answers */}
-            <div className="w-full md:flex-1 md:max-w-[48%] flex flex-col gap-3 min-h-0 overflow-y-auto">
-              <PlayQuestionHeader
-                categoryEmoji={categoryEmoji}
-                categoryName={categoryName}
-                gameTitle={game.title}
-                questionText={question.question}
-                difficulty={question.difficulty}
-                isTextRound={isTextRound}
-              />
-
-              <PlayAnswerGrid
-                options={options}
-                correctAnswer={question.answer}
-                selectedAnswer={selectedAnswer}
-                revealed={roundState === "correct" || roundState === "incorrect"}
-                disabled={roundState !== "playing"}
-                onSelect={handleAnswer}
-              />
-
-              {roundState === "playing" && (
-                <PlayPowerUps
-                  hintsLeft={game.maxHints - hintsUsed}
-                  skipsLeft={game.maxSkips - skipsUsed}
-                  fiftyLeft={1 - fiftyUsed}
-                  freezeLeft={game.timeLimit ? 1 - freezeUsed : 0}
-                  revealLeft={1 - revealUsed}
-                  doubleActive={doubleXpActive}
-                  hintLoading={hintLoading}
-                  onHint={handleHint}
-                  onSkip={handleSkip}
-                  onFifty={handleFifty}
-                  onFreeze={handleFreeze}
-                  onReveal={handleReveal}
-                  onDouble={handleDouble}
-                />
-              )}
+              </div>
             </div>
           </div>
+
+          {/* Mobile: sticky power-up bar — always fully visible */}
+          {roundState === "playing" && (
+            <div className="shrink-0 md:hidden border-t border-black/10 bg-[#fffdf4] px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <PlayPowerUps
+                compact
+                hintsLeft={game.maxHints - hintsUsed}
+                skipsLeft={game.maxSkips - skipsUsed}
+                fiftyLeft={1 - fiftyUsed}
+                freezeLeft={game.timeLimit ? 1 - freezeUsed : 0}
+                revealLeft={1 - revealUsed}
+                doubleActive={doubleXpActive}
+                hintLoading={hintLoading}
+                onHint={handleHint}
+                onSkip={handleSkip}
+                onFifty={handleFifty}
+                onFreeze={handleFreeze}
+                onReveal={handleReveal}
+                onDouble={handleDouble}
+              />
+            </div>
+          )}
         </div>
       )}
 

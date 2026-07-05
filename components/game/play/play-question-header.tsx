@@ -28,10 +28,10 @@ export function PlayQuestionHeader({
       key={questionText}
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-3 md:mb-4"
+      className="mb-2 md:mb-4"
     >
-      <div className="flex items-center gap-2 mb-1.5">
-        {categoryEmoji && <span className="text-2xl">{categoryEmoji}</span>}
+      <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-1.5">
+        {categoryEmoji && <span className="text-xl md:text-2xl">{categoryEmoji}</span>}
         <div>
           <p className="text-[10px] font-bold text-black/50 uppercase tracking-wide">
             {categoryName ?? gameTitle}
@@ -48,7 +48,7 @@ export function PlayQuestionHeader({
         </div>
       </div>
       {!isTextRound && (
-        <h2 className="text-base md:text-lg font-black text-black leading-tight">
+        <h2 className="text-sm md:text-lg font-black text-black leading-tight">
           {questionText}
         </h2>
       )}

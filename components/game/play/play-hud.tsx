@@ -43,8 +43,8 @@ export function PlayHud({
   const xpBar = xpProgressInLevel(xp);
 
   return (
-    <header className="relative z-20 shrink-0 px-3 md:px-5 pt-[max(0.4rem,env(safe-area-inset-top))] pb-2 max-w-6xl mx-auto w-full border-b border-black/10 bg-[#fffdf4]/95">
-      <div className="flex items-center gap-2 mb-2">
+    <header className="relative z-20 shrink-0 px-3 md:px-5 pt-[max(0.35rem,env(safe-area-inset-top))] pb-1.5 md:pb-2 max-w-6xl mx-auto w-full border-b border-black/10 bg-[#fffdf4]">
+      <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2">
         <Link
           href={backHref}
           className="play-hud-pill shrink-0 !px-2.5 !py-1.5 hover:bg-secondary"
@@ -93,7 +93,8 @@ export function PlayHud({
         </div>
       </div>
 
-      <div className="mb-2 px-1">
+      {/* XP bar — desktop only (saves vertical space on mobile) */}
+      <div className="hidden md:block mb-2 px-1">
         <div className="flex justify-between text-[9px] font-bold text-black/50 mb-0.5">
           <span>{xp.toLocaleString()} XP</span>
           <span>
@@ -108,7 +109,7 @@ export function PlayHud({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-[10px] font-bold text-black/70">
+      <div className="flex items-center gap-1.5 md:gap-2 text-[10px] font-bold text-black/70">
         <span className="play-hud-pill !py-1 capitalize">{difficulty}</span>
         <span>
           Q {Math.min(currentIndex + 1, total)}/{total}

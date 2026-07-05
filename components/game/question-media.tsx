@@ -189,7 +189,7 @@ export function QuestionMedia({
     <div className={cn("relative flex items-center justify-center", className)}>
       <div
         className={cn(
-          "relative w-[240px] sm:w-[280px] md:w-[320px] aspect-[3/4]",
+          "relative w-[160px] sm:w-[220px] md:w-[320px] aspect-[3/4] max-h-[32vh] md:max-h-none",
           "rounded-2xl overflow-hidden",
           "shadow-[0_16px_48px_rgba(0,0,0,0.5)] ring-1 ring-white/25"
         )}

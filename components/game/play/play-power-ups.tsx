@@ -34,7 +34,10 @@ interface PlayPowerUpsProps {
   onFreeze: () => void;
   onReveal: () => void;
   onDouble: () => void;
+  compact?: boolean;
 }
+
+const ICON = "h-5 w-5 md:h-4 md:w-4 shrink-0";
 
 export function PlayPowerUps({
   hintsLeft,
@@ -50,18 +53,24 @@ export function PlayPowerUps({
   onFreeze,
   onReveal,
   onDouble,
+  compact,
 }: PlayPowerUpsProps) {
   const items: (PowerUp & { onClick: () => void })[] = [
-    { id: "hint", icon: <Lightbulb className="h-4 w-4" />, label: "AI Hint", count: hintsLeft, disabled: hintsLeft <= 0 || hintLoading, onClick: onHint },
-    { id: "skip", icon: <SkipForward className="h-4 w-4" />, label: "Skip", count: skipsLeft, disabled: skipsLeft <= 0, onClick: onSkip },
-    { id: "fifty", icon: <SplitSquareHorizontal className="h-4 w-4" />, label: "50/50", count: fiftyLeft, disabled: fiftyLeft <= 0, onClick: onFifty },
-    { id: "freeze", icon: <Snowflake className="h-4 w-4" />, label: "Freeze", count: freezeLeft, disabled: freezeLeft <= 0, onClick: onFreeze },
-    { id: "reveal", icon: <Eye className="h-4 w-4" />, label: "Reveal", count: revealLeft, disabled: revealLeft <= 0, onClick: onReveal },
-    { id: "double", icon: <Zap className="h-4 w-4" />, label: "2× XP", count: doubleActive ? 0 : 1, disabled: doubleActive, onClick: onDouble },
+    { id: "hint", icon: <Lightbulb className={ICON} strokeWidth={2.25} />, label: "Hint", count: hintsLeft, disabled: hintsLeft <= 0 || hintLoading, onClick: onHint },
+    { id: "skip", icon: <SkipForward className={ICON} strokeWidth={2.25} />, label: "Skip", count: skipsLeft, disabled: skipsLeft <= 0, onClick: onSkip },
+    { id: "fifty", icon: <SplitSquareHorizontal className={ICON} strokeWidth={2.25} />, label: "50/50", count: fiftyLeft, disabled: fiftyLeft <= 0, onClick: onFifty },
+    { id: "freeze", icon: <Snowflake className={ICON} strokeWidth={2.25} />, label: "Freeze", count: freezeLeft, disabled: freezeLeft <= 0, onClick: onFreeze },
+    { id: "reveal", icon: <Eye className={ICON} strokeWidth={2.25} />, label: "Reveal", count: revealLeft, disabled: revealLeft <= 0, onClick: onReveal },
+    { id: "double", icon: <Zap className={ICON} strokeWidth={2.25} />, label: "2× XP", count: doubleActive ? 0 : 1, disabled: doubleActive, onClick: onDouble },
   ];
 
   return (
-    <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5 md:gap-2">
+    <div
+      className={cn(
+        "grid grid-cols-3 gap-2",
+        !compact && "md:grid-cols-6"
+      )}
+    >
       {items.map((item) => (
         <button
           key={item.id}
@@ -70,16 +79,17 @@ export function PlayPowerUps({
           onClick={item.onClick}
           className={cn(
             "play-powerup-btn touch-target",
+            compact && "play-powerup-btn-compact",
             item.disabled && "opacity-40 cursor-not-allowed",
             item.id === "double" && doubleActive && "ring-2 ring-answer4"
           )}
         >
           {item.icon}
-          <span className="text-[9px] font-black leading-none mt-0.5">{item.label}</span>
+          <span className="text-[10px] md:text-[9px] font-black leading-none mt-1">
+            {item.label}
+          </span>
           {item.count > 0 && (
-            <span className="absolute -top-1 -right-1 bg-answer4 text-black text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-black">
-              {item.count}
-            </span>
+            <span className="play-powerup-badge">{item.count}</span>
           )}
         </button>
       ))}

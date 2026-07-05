@@ -22,7 +22,7 @@ export function PlayAnswerGrid({
   onSelect,
 }: PlayAnswerGridProps) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 md:gap-3">
+    <div className="grid grid-cols-2 gap-2 md:gap-3">
       {options.map((option, i) => {
         const isSelected = selectedAnswer === option;
         const isCorrect = option.toLowerCase() === correctAnswer.toLowerCase();
