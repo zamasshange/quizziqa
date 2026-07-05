@@ -12,7 +12,7 @@ const getCachedPool = unstable_cache(
     if (!template) return null;
     return buildFullQuestionPool(template);
   },
-  ["question-pool-v3"],
+  ["question-pool-v4"],
   { revalidate: 86400, tags: ["question-pools"] }
 );
 

@@ -1,10 +1,7 @@
 import type { Game, GameQuestion, Difficulty } from "@/lib/types";
 import type { GameTemplate } from "@/lib/games/templates";
 import type { EntityEntry } from "@/lib/data/entities";
-import {
-  fetchWikiEntities,
-  fetchFlagImages,
-} from "@/lib/wikipedia/client";
+import { fetchFlagImages } from "@/lib/wikipedia/client";
 import { getFlagUrl } from "@/lib/media/images";
 import { resolveEntityImage } from "@/lib/media/resolve-image";
 
@@ -55,14 +52,11 @@ async function buildQuestionsFromEntities(
   template: GameTemplate,
   entities: EntityEntry[]
 ): Promise<GameQuestion[]> {
-  const wikiTitles = entities.map((e) => e.wiki);
-
-  const [wikiData, flagImages] = await Promise.all([
-    fetchWikiEntities(wikiTitles),
-    template.useFlags
-      ? fetchFlagImages(entities.map((e) => ({ wiki: e.wiki, answer: e.answer })))
-      : Promise.resolve(new Map()),
-  ]);
+  const flagImages = template.useFlags
+    ? await fetchFlagImages(
+        entities.map((e) => ({ wiki: e.wiki, answer: e.answer }))
+      )
+    : new Map<string, string>();
 
   const allAnswers = entities.map(
     (e) => e.answer ?? e.wiki.replace(/_/g, " ")
@@ -72,12 +66,12 @@ async function buildQuestionsFromEntities(
 
   for (let i = 0; i < entities.length; i++) {
     const entity = entities[i];
-    const wiki = wikiData.get(entity.wiki);
     const answer = entity.answer ?? entity.wiki.replace(/_/g, " ");
-    const flagUrl = template.useFlags ? getFlagUrl(answer) : "";
+    const flagUrl = template.useFlags
+      ? flagImages.get(entity.wiki) ?? getFlagUrl(answer)
+      : "";
     const image = resolveEntityImage(entity.wiki, answer, {
       flagUrl: flagUrl || undefined,
-      wikiImage: wiki?.image,
     });
 
     if (!image && template.mode === "guess-from-image") continue;
@@ -88,7 +82,7 @@ async function buildQuestionsFromEntities(
       answer,
       alternatives: pickAlternatives(answer, allAnswers),
       image,
-      fact: wiki?.fact ?? `Learn more about ${answer} on Wikipedia.`,
+      fact: `Learn more about ${answer} on Wikipedia.`,
       difficulty: difficultyForIndex(i, entities.length),
     });
   }

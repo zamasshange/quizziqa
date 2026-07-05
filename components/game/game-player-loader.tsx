@@ -1,9 +1,11 @@
+"use client";
+
+import { useSearchParams } from "next/navigation";
 import { GamePlayer } from "@/components/game/game-player";
 import type { Game } from "@/lib/types";
 
 interface Props {
   game: Game;
-  isDaily?: boolean;
   categoryName?: string;
   categorySlug?: string;
   categoryEmoji?: string;
@@ -11,11 +13,13 @@ interface Props {
 
 export function GamePlayerLoader({
   game,
-  isDaily,
   categoryName,
   categorySlug,
   categoryEmoji,
 }: Props) {
+  const searchParams = useSearchParams();
+  const isDaily = searchParams.get("daily") === "true";
+
   return (
     <GamePlayer
       game={game}

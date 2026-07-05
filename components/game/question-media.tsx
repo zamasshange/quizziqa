@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getFallbackImage } from "@/lib/media/fallback-images";
+import { getMediaProxyUrl } from "@/lib/media/media-url";
 import type { MediaVariant } from "@/lib/media/images";
 
 interface QuestionMediaProps {
@@ -29,17 +29,22 @@ function MediaImage({
 }) {
   const [currentSrc, setCurrentSrc] = useState(src);
   const [failed, setFailed] = useState(false);
+  const [retried, setRetried] = useState(false);
 
   useEffect(() => {
     setCurrentSrc(src);
     setFailed(false);
+    setRetried(false);
   }, [src]);
 
   const handleError = () => {
-    const fallback = wikiKey ? getFallbackImage(wikiKey) : undefined;
-    if (fallback && fallback !== currentSrc) {
-      setCurrentSrc(fallback);
-      return;
+    if (wikiKey && !retried) {
+      const proxy = getMediaProxyUrl(wikiKey);
+      if (proxy !== currentSrc) {
+        setRetried(true);
+        setCurrentSrc(proxy);
+        return;
+      }
     }
     setFailed(true);
   };
@@ -74,7 +79,6 @@ export function QuestionMedia({
   text,
   variant,
   className,
-  questionKey,
   wikiKey,
 }: QuestionMediaProps) {
   if (variant === "text" && text) {
