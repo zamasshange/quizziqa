@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { getCachedWikiImageUrl } from "@/lib/media/fetch-wiki-image";
+import { NextRequest, NextResponse } from "next/server";
+import { resolveImageForWiki } from "@/lib/media/resolve-image-server";
 
 const UA =
   "GuessEverythingQuiz/1.0 (https://quizziqa.vercel.app; educational quiz app)";
@@ -10,9 +10,20 @@ export async function GET(req: NextRequest) {
     return new Response("Missing wiki parameter", { status: 400 });
   }
 
-  const url = await getCachedWikiImageUrl(wiki);
+  const url = await resolveImageForWiki(wiki);
   if (!url) {
     return new Response("Image not found", { status: 404 });
+  }
+
+  // Manifest URLs are verified — redirect for speed (browser caches the target)
+  if (url.startsWith("http")) {
+    return NextResponse.redirect(url, {
+      status: 302,
+      headers: {
+        "Cache-Control":
+          "public, max-age=604800, stale-while-revalidate=86400",
+      },
+    });
   }
 
   try {
@@ -25,11 +36,12 @@ export async function GET(req: NextRequest) {
       next: { revalidate: 604800 },
     });
 
-    if (!upstream.ok || !upstream.body) {
+    if (!upstream.ok) {
       return new Response("Upstream image unavailable", { status: 502 });
     }
 
-    return new Response(upstream.body, {
+    const buffer = await upstream.arrayBuffer();
+    return new Response(buffer, {
       headers: {
         "Content-Type":
           upstream.headers.get("content-type") ?? "image/jpeg",

@@ -469,7 +469,6 @@ export function GamePlayer({
                   <div className="play-media-frame">
                     <QuestionMedia
                       key={question.id}
-                      questionKey={question.id}
                       wikiKey={wikiFromQuestionId(question.id)}
                       image={question.image}
                       emoji={question.emoji}

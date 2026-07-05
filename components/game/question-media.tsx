@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { getManifestImage } from "@/lib/media/image-manifest";
 import { getMediaProxyUrl } from "@/lib/media/media-url";
 import type { MediaVariant } from "@/lib/media/images";
 
@@ -12,7 +13,6 @@ interface QuestionMediaProps {
   text?: string;
   variant: MediaVariant;
   className?: string;
-  questionKey?: string;
   wikiKey?: string;
 }
 
@@ -29,19 +29,31 @@ function MediaImage({
 }) {
   const [currentSrc, setCurrentSrc] = useState(src);
   const [failed, setFailed] = useState(false);
-  const [retried, setRetried] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     setCurrentSrc(src);
     setFailed(false);
-    setRetried(false);
+    setAttempt(0);
   }, [src]);
 
   const handleError = () => {
-    if (wikiKey && !retried) {
+    if (!wikiKey) {
+      setFailed(true);
+      return;
+    }
+    if (attempt === 0) {
+      const manifest = getManifestImage(wikiKey);
+      if (manifest && manifest !== currentSrc) {
+        setAttempt(1);
+        setCurrentSrc(manifest);
+        return;
+      }
+    }
+    if (attempt <= 1) {
       const proxy = getMediaProxyUrl(wikiKey);
       if (proxy !== currentSrc) {
-        setRetried(true);
+        setAttempt(2);
         setCurrentSrc(proxy);
         return;
       }
@@ -84,13 +96,19 @@ export function QuestionMedia({
   if (variant === "text" && text) {
     const quoteMatch = text.match(/^("[^"]+"|'[^']+')/);
     const quote = quoteMatch?.[1] ?? text;
-    const prompt = quoteMatch ? text.slice(quoteMatch[0].length).replace(/^[.\s—–-]+/, "") : null;
+    const prompt = quoteMatch
+      ? text.slice(quoteMatch[0].length).replace(/^[.\s—–-]+/, "")
+      : null;
 
     return (
       <div className={cn("flex items-center justify-center", className)}>
         <div className="w-[280px] sm:w-[340px] md:w-[400px] px-6 py-8 md:py-10 rounded-2xl bg-secondary border border-black/15 shadow-soft-1 text-center">
-          <p className="text-xl md:text-2xl font-black text-black leading-snug italic">{quote}</p>
-          {prompt && <p className="mt-4 text-sm font-bold text-black/60">{prompt}</p>}
+          <p className="text-xl md:text-2xl font-black text-black leading-snug italic">
+            {quote}
+          </p>
+          {prompt && (
+            <p className="mt-4 text-sm font-bold text-black/60">{prompt}</p>
+          )}
         </div>
       </div>
     );
@@ -128,17 +146,29 @@ export function QuestionMedia({
   const frameClass = cn(
     "relative overflow-hidden shadow-soft-1 ring-1 ring-black/10 bg-white",
     variant === "flag" && "w-[240px] sm:w-[300px] aspect-[3/2] rounded-sm",
-    variant === "landscape" && "w-full max-w-[320px] sm:max-w-[400px] aspect-[4/3] rounded-xl",
-    (variant === "square" || variant === "logo") && "w-[180px] sm:w-[240px] aspect-square rounded-xl",
-    variant === "portrait" && "w-[160px] sm:w-[220px] md:w-[280px] aspect-[3/4] max-h-[32vh] md:max-h-none rounded-xl"
+    variant === "landscape" &&
+      "w-full max-w-[320px] sm:max-w-[400px] aspect-[4/3] rounded-xl",
+    variant === "food" &&
+      "w-full max-w-[300px] sm:max-w-[360px] aspect-[4/3] rounded-xl",
+    variant === "square" &&
+      "w-[200px] sm:w-[260px] aspect-square rounded-xl",
+    variant === "product" &&
+      "w-[150px] sm:w-[200px] md:w-[240px] aspect-[9/16] max-h-[42vh] rounded-xl",
+    variant === "logo" &&
+      "w-[180px] sm:w-[240px] aspect-square rounded-xl",
+    variant === "portrait" &&
+      "w-[160px] sm:w-[220px] md:w-[280px] aspect-[3/4] max-h-[36vh] md:max-h-none rounded-xl"
   );
 
-  const imgClass =
-    variant === "logo"
-      ? "object-contain p-4 bg-white"
-      : variant === "flag"
-        ? "object-cover"
-        : "object-cover object-center";
+  const imgClass = cn(
+    variant === "logo" && "object-contain p-5 bg-white",
+    variant === "product" && "object-contain p-3 bg-white",
+    variant === "food" && "object-contain p-1 bg-white",
+    variant === "flag" && "object-cover",
+    variant === "landscape" && "object-cover object-center",
+    variant === "square" && "object-cover object-center",
+    variant === "portrait" && "object-cover object-top"
+  );
 
   return (
     <div className={cn("flex items-center justify-center", className)}>
