@@ -180,22 +180,48 @@ export const capitals: EntityEntry[] = [
 ];
 
 export const presidents: EntityEntry[] = [
+  // United States (mix of eras — not the whole pool)
   { wiki: "George_Washington", answer: "George Washington" },
+  { wiki: "Thomas_Jefferson", answer: "Thomas Jefferson" },
   { wiki: "Abraham_Lincoln", answer: "Abraham Lincoln" },
+  { wiki: "Theodore_Roosevelt", answer: "Theodore Roosevelt" },
   { wiki: "Franklin_D._Roosevelt", answer: "Franklin D. Roosevelt" },
   { wiki: "John_F._Kennedy", answer: "John F. Kennedy" },
+  { wiki: "Ronald_Reagan", answer: "Ronald Reagan" },
   { wiki: "Barack_Obama", answer: "Barack Obama" },
   { wiki: "Joe_Biden", answer: "Joe Biden" },
   { wiki: "Donald_Trump", answer: "Donald Trump" },
-  { wiki: "Thomas_Jefferson", answer: "Thomas Jefferson" },
-  { wiki: "Theodore_Roosevelt", answer: "Theodore Roosevelt" },
-  { wiki: "Ronald_Reagan", answer: "Ronald Reagan" },
+  // Europe
   { wiki: "Winston_Churchill", answer: "Winston Churchill" },
-  { wiki: "Nelson_Mandela", answer: "Nelson Mandela" },
+  { wiki: "Margaret_Thatcher", answer: "Margaret Thatcher" },
+  { wiki: "Elizabeth_II", answer: "Queen Elizabeth II" },
   { wiki: "Charles_de_Gaulle", answer: "Charles de Gaulle" },
-  { wiki: "Volodymyr_Zelenskyy", answer: "Volodymyr Zelenskyy" },
   { wiki: "Emmanuel_Macron", answer: "Emmanuel Macron" },
+  { wiki: "Angela_Merkel", answer: "Angela Merkel" },
+  { wiki: "Olaf_Scholz", answer: "Olaf Scholz" },
+  { wiki: "Giorgia_Meloni", answer: "Giorgia Meloni" },
+  { wiki: "Keir_Starmer", answer: "Keir Starmer" },
+  { wiki: "Volodymyr_Zelenskyy", answer: "Volodymyr Zelenskyy" },
+  { wiki: "Vladimir_Putin", answer: "Vladimir Putin" },
+  { wiki: "Mikhail_Gorbachev", answer: "Mikhail Gorbachev" },
+  // Americas
   { wiki: "Justin_Trudeau", answer: "Justin Trudeau" },
+  { wiki: "Luiz_Inácio_Lula_da_Silva", answer: "Luiz Inácio Lula da Silva" },
+  { wiki: "Claudia_Sheinbaum", answer: "Claudia Sheinbaum" },
+  // Africa & Middle East
+  { wiki: "Nelson_Mandela", answer: "Nelson Mandela" },
+  { wiki: "Cyril_Ramaphosa", answer: "Cyril Ramaphosa" },
+  { wiki: "Benjamin_Netanyahu", answer: "Benjamin Netanyahu" },
+  { wiki: "Recep_Tayyip_Erdogan", answer: "Recep Tayyip Erdoğan" },
+  // Asia-Pacific
+  { wiki: "Narendra_Modi", answer: "Narendra Modi" },
+  { wiki: "Xi_Jinping", answer: "Xi Jinping" },
+  { wiki: "Shinzo_Abe", answer: "Shinzo Abe" },
+  { wiki: "Joko_Widodo", answer: "Joko Widodo" },
+  { wiki: "Jacinda_Ardern", answer: "Jacinda Ardern" },
+  { wiki: "Kim_Jong_Un", answer: "Kim Jong Un" },
+  { wiki: "Mahatma_Gandhi", answer: "Mahatma Gandhi" },
+  { wiki: "Pope_Francis", answer: "Pope Francis" },
 ];
 
 export const phones: EntityEntry[] = [

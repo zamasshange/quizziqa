@@ -52,6 +52,50 @@ const PATCH = {
   Cairo: "https://upload.wikimedia.org/wikipedia/commons/e/e3/Kheops-Pyramid.jpg",
   Canberra:
     "https://upload.wikimedia.org/wikipedia/commons/5/5c/Parliament_House_Canberra.jpg",
+  Vladimir_Putin:
+    "https://upload.wikimedia.org/wikipedia/commons/3/33/Vladimir_Putin_%282020-02-20%29.jpg",
+  Narendra_Modi:
+    "https://upload.wikimedia.org/wikipedia/commons/c/c4/Official_Photograph_of_Prime_Minister_Narendra_Modi_Portrait.png",
+  Xi_Jinping:
+    "https://upload.wikimedia.org/wikipedia/commons/9/9c/Xi_Jinping_%282019%29.jpg",
+  Angela_Merkel:
+    "https://upload.wikimedia.org/wikipedia/commons/2/25/Angela_Merkel_2019_cropped.jpg",
+  Margaret_Thatcher:
+    "https://upload.wikimedia.org/wikipedia/commons/9/94/Margaret_Thatcher_stock_portrait_%28cropped%29.jpg",
+  Elizabeth_II:
+    "https://upload.wikimedia.org/wikipedia/commons/1/1e/Queen_Elizabeth_II_official_portrait_for_1959_tour_%28crop%29.jpg",
+  Mikhail_Gorbachev:
+    "https://upload.wikimedia.org/wikipedia/commons/5/57/Mikhail_Gorbachev_1986_%28cropped%29.jpg",
+  Shinzo_Abe:
+    "https://upload.wikimedia.org/wikipedia/commons/5/52/Shinz%C5%8D_Abe%2C_official_portrait_%28cropped%29.jpg",
+  Keir_Starmer:
+    "https://upload.wikimedia.org/wikipedia/commons/4/4e/Official_portrait_of_Keir_Starmer_%28cropped%29.jpg",
+  Giorgia_Meloni:
+    "https://upload.wikimedia.org/wikipedia/commons/d/d8/Giorgia_Meloni_Official_2022_%28cropped%29.jpg",
+  "Luiz_Inácio_Lula_da_Silva":
+    "https://upload.wikimedia.org/wikipedia/commons/5/5a/Lula_%28cropped%29.jpg",
+  Olaf_Scholz:
+    "https://upload.wikimedia.org/wikipedia/commons/0/0e/Olaf_Scholz_2023.jpg",
+  Pope_Francis:
+    "https://upload.wikimedia.org/wikipedia/commons/b/b5/Pope_Francis_2015.jpg",
+  Mahatma_Gandhi:
+    "https://upload.wikimedia.org/wikipedia/commons/7/7a/Mahatma-Gandhi%2C_studio%2C_1931.jpg",
+  Cyril_Ramaphosa:
+    "https://upload.wikimedia.org/wikipedia/commons/5/5d/Cyril_Ramaphosa_2024.jpg",
+  Joko_Widodo:
+    "https://upload.wikimedia.org/wikipedia/commons/f/f4/Joko_Widodo_2019_official_portrait_%28cropped%29.jpg",
+  Kim_Jong_Un:
+    "https://upload.wikimedia.org/wikipedia/commons/8/8d/Kim_Jong_Un_2019_%28cropped%29.jpg",
+  Recep_Tayyip_Erdogan:
+    "https://upload.wikimedia.org/wikipedia/commons/f/f4/Recep_Tayyip_Erdogan_%282019%29.jpg",
+  Claudia_Sheinbaum:
+    "https://upload.wikimedia.org/wikipedia/commons/4/4a/Claudia_Sheinbaum_%28cropped%29.jpg",
+  Jacinda_Ardern:
+    "https://upload.wikimedia.org/wikipedia/commons/5/5c/Jacinda_Ardern_2018.jpg",
+  Benjamin_Netanyahu:
+    "https://upload.wikimedia.org/wikipedia/commons/7/7e/Benjamin_Netanyahu_2023.jpg",
+  Volodymyr_Zelenskyy:
+    "https://upload.wikimedia.org/wikipedia/commons/9/9c/Volodymyr_Zelensky_Official_portrait.jpg",
 };
 
 const src = fs.readFileSync(outPath, "utf8");

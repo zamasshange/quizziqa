@@ -15,6 +15,8 @@ interface QuestionMediaProps {
   wikiKey?: string;
   /** Smaller frame — only for tall product images (phones, cars) on mobile */
   compact?: boolean;
+  /** Single clean frame inside play card — no extra white box */
+  frameless?: boolean;
 }
 
 function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: string }) {
@@ -22,11 +24,13 @@ function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: 
   const [currentSrc, setCurrentSrc] = useState(primarySrc);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     setCurrentSrc(wikiKey ? getMediaProxyUrl(wikiKey) : fallbackSrc ?? "");
     setFailed(false);
     setAttempt(0);
+    setLoaded(false);
   }, [wikiKey, fallbackSrc]);
 
   const handleError = () => {
@@ -48,17 +52,29 @@ function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: 
   }
 
   return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img
-      src={currentSrc}
-      alt=""
-      role="presentation"
-      className="block max-w-full max-h-full w-auto h-auto object-contain mx-auto"
-      onError={handleError}
-      decoding="async"
-      loading="eager"
-      fetchPriority="high"
-    />
+    <div className="relative w-full h-full flex items-center justify-center">
+      {!loaded && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-black/[0.04] animate-pulse">
+          <span className="text-2xl opacity-40">📷</span>
+          <span className="text-[10px] font-bold text-black/30">Loading…</span>
+        </div>
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={currentSrc}
+        alt=""
+        role="presentation"
+        className={cn(
+          "block max-w-full max-h-full w-auto h-auto object-contain mx-auto transition-opacity duration-200",
+          loaded ? "opacity-100" : "opacity-0"
+        )}
+        onLoad={() => setLoaded(true)}
+        onError={handleError}
+        decoding="async"
+        loading="eager"
+        fetchPriority="high"
+      />
+    </div>
   );
 }
 
@@ -104,6 +120,7 @@ export function QuestionMedia({
   className,
   wikiKey,
   compact = false,
+  frameless = false,
 }: QuestionMediaProps) {
   if (variant === "text" && text) {
     const quoteMatch = text.match(/^("[^"]+"|'[^']+')/);
@@ -158,12 +175,16 @@ export function QuestionMedia({
   const sizeClass = useCompact ? frame.compact : frame.normal;
 
   return (
-    <div className={cn("flex items-center justify-center w-full", className)}>
+    <div className={cn("flex items-center justify-center w-full h-full", className)}>
       <div
         className={cn(
           "relative flex items-center justify-center overflow-hidden mx-auto",
-          "rounded-xl shadow-soft-1 ring-1 ring-black/10 bg-white p-2",
-          sizeClass
+          frameless
+            ? sizeClass
+            : cn(
+                "rounded-xl bg-white p-2 border border-black/10",
+                sizeClass
+              )
         )}
       >
         <MediaImage wikiKey={wikiKey} fallbackSrc={image} />

@@ -283,7 +283,7 @@ export const gameTemplates: GameTemplate[] = [
     featured: true,
     trending: true,
     isNew: true,
-    questionCount: 8,
+    questionCount: 10,
   },
   {
     id: "guess-car",

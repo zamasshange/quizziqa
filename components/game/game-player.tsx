@@ -14,7 +14,7 @@ import {
   getAnswerPool,
   recordSessionQuestions,
 } from "@/lib/game/question-engine";
-import { preloadImageLink, preloadImages } from "@/lib/game/image-cache";
+import { preloadSessionImages } from "@/lib/game/preload-session";
 import { ensureQuestionImages, wikiFromQuestionId } from "@/lib/media/resolve-image";
 import { DEFAULT_SETTINGS } from "@/lib/game/settings";
 import { audioManager } from "@/lib/audio/audio-manager";
@@ -91,6 +91,8 @@ export function GamePlayer({
   const [timeLeft, setTimeLeft] = useState(timerLimit);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const playRootRef = useRef<HTMLDivElement>(null);
   const freezeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordedRef = useRef(false);
   const answerTimeRef = useRef(Date.now());
@@ -99,11 +101,24 @@ export function GamePlayer({
   );
 
   useEffect(() => {
-    preloadImages(sessionQuestions.slice(0, 4).map((q) => q.image));
-    sessionQuestions.slice(0, 2).forEach((q) => {
-      if (q.image) preloadImageLink(q.image);
-    });
+    preloadSessionImages(sessionQuestions);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- warm cache once on mount
+  }, []);
+
+  // Touchpad / wheel scroll when body is locked (play-mode)
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    const root = playRootRef.current;
+    if (!scroller || !root) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (scroller.scrollHeight <= scroller.clientHeight) return;
+      scroller.scrollTop += e.deltaY;
+      e.preventDefault();
+    };
+
+    root.addEventListener("wheel", onWheel, { passive: false });
+    return () => root.removeEventListener("wheel", onWheel);
   }, []);
 
   const question = sessionQuestions[currentIndex];
@@ -152,7 +167,7 @@ export function GamePlayer({
 
         setSessionQuestions(session);
         setCurrentIndex(0);
-        preloadImages(session.slice(0, 5).map((q) => q.image));
+        preloadSessionImages(session);
       } catch {
         /* keep SSR session */
       }
@@ -173,21 +188,14 @@ export function GamePlayer({
     setRoundState("playing");
   }, [currentIndex, question?.id, resetRound]);
 
-  // Preload next question image immediately
+  // Preload next question images immediately
   useEffect(() => {
     if (!question) return;
-    if (question.image) preloadImageLink(question.image);
-    const next = sessionQuestions[currentIndex + 1];
-    const after = sessionQuestions[currentIndex + 2];
-    preloadImages([next?.image, after?.image]);
+    preloadSessionImages([question]);
+    preloadSessionImages(
+      sessionQuestions.slice(currentIndex + 1, currentIndex + 4)
+    );
   }, [question, currentIndex, sessionQuestions]);
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
 
   const enrichFact = useCallback(async (baseFact: string, answer: string) => {
     setDisplayFact(baseFact);
@@ -318,7 +326,7 @@ export function GamePlayer({
     setFirstQuestion(true);
     recordedRef.current = false;
     if (session[0]) resetRound(session[0]);
-    preloadImages(session.slice(0, 3).map((q) => q.image));
+    preloadSessionImages(session);
   }, [pool, initialGame.slug, settings.questionCount, resetRound]);
 
   useEffect(() => {
@@ -416,7 +424,7 @@ export function GamePlayer({
   const animateEntry = firstQuestion && settings.animations === "full";
 
   return (
-    <div className="relative flex flex-col h-dvh max-h-dvh overflow-hidden w-full">
+    <div ref={playRootRef} className="relative flex flex-col h-dvh max-h-dvh overflow-hidden w-full">
       <PlayHud
         backHref={backHref}
         level={playerLevel}
@@ -452,7 +460,10 @@ export function GamePlayer({
         />
       ) : (
         <div className="relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-contain px-3 md:px-6 lg:px-10 xl:px-12 pt-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-6">
+          <div
+            ref={scrollRef}
+            className="play-scroll-area flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-y-auto px-3 md:px-6 lg:px-10 xl:px-12 pt-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-6"
+          >
             <div className="flex flex-1 min-h-0 items-stretch justify-center gap-4 lg:gap-8 w-full max-w-[1720px] mx-auto">
               <PlaySidePanel
                 level={playerLevel}
@@ -462,13 +473,18 @@ export function GamePlayer({
                 categoryEmoji={categoryEmoji}
                 collectedThisSession={collected}
                 isDaily={isDaily}
+                score={score}
+                currentIndex={currentIndex}
+                total={sessionQuestions.length}
+                combo={combo}
+                bestCombo={bestCombo}
               />
 
               <div className="play-game-card play-game-card--fill flex-1 min-w-0 min-h-0 flex flex-col md:flex-row items-center md:items-stretch gap-3 md:gap-8 lg:gap-12 p-3 md:p-8 lg:p-10">
-                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:min-h-0 md:max-w-[50%]">
-                  <div className="play-media-frame play-media-frame--desktop w-full h-full flex items-center justify-center">
+                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:min-h-0 md:max-w-[50%] min-h-[200px] md:min-h-0">
                     <QuestionMedia
                       key={question.id}
+                      frameless
                       compact={mediaVariant === "product"}
                       wikiKey={wikiFromQuestionId(question.id)}
                       image={question.image}
@@ -476,8 +492,8 @@ export function GamePlayer({
                       text={question.question}
                       alt=""
                       variant={mediaVariant}
+                      className="h-full"
                     />
-                  </div>
 
                   {(hintText || hintLoading) && (
                     <div className="absolute -bottom-2 inset-x-0 z-10 mx-auto max-w-[95%] bg-answer4/95 text-black rounded-xl px-3 py-2 text-[11px] font-bold border-2 border-black shadow-lg flex items-start gap-1.5">

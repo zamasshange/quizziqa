@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { getManifestImage } from "@/lib/media/image-manifest";
+import { fallbackImages } from "@/lib/media/fallback-images";
 import { getCachedWikiImageUrl } from "@/lib/media/fetch-wiki-image";
+import { getCachedImage, setCachedImage } from "@/lib/media/server-image-cache";
 
 const UA =
   "GuessEverythingQuiz/1.0 (https://quizziqa.vercel.app; educational quiz app)";
@@ -31,8 +33,21 @@ export async function GET(req: NextRequest) {
     return new Response("Missing wiki parameter", { status: 400 });
   }
 
+  const cached = getCachedImage(wiki);
+  if (cached) {
+    return new Response(cached.buffer, {
+      headers: {
+        "Content-Type": cached.contentType,
+        "Cache-Control":
+          "public, max-age=604800, stale-while-revalidate=86400, immutable",
+        "X-Image-Cache": "HIT",
+      },
+    });
+  }
+
   const candidates = [
     getManifestImage(wiki),
+    fallbackImages[wiki],
     await getCachedWikiImageUrl(wiki),
   ].filter((u, i, arr): u is string => !!u && arr.indexOf(u) === i);
 
@@ -56,11 +71,14 @@ export async function GET(req: NextRequest) {
     upstream.headers.get("content-type") ??
     (sourceUrl.endsWith(".svg") ? "image/svg+xml" : "image/jpeg");
 
+  setCachedImage(wiki, buffer, contentType);
+
   return new Response(buffer, {
     headers: {
       "Content-Type": contentType,
       "Cache-Control":
         "public, max-age=604800, stale-while-revalidate=86400, immutable",
+      "X-Image-Cache": "MISS",
     },
   });
 }
