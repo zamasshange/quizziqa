@@ -464,33 +464,19 @@ export function GamePlayer({
                 isDaily={isDaily}
               />
 
-              <div className="play-game-card flex-1 min-w-0 flex flex-col md:flex-row items-stretch gap-2 md:gap-6 p-2.5 md:p-6">
-                <div className="relative shrink-0 md:flex-1 md:max-w-[48%]">
-                  <div className="flex flex-row md:flex-col items-start gap-2.5 md:gap-0">
-                    <div className="play-media-frame shrink-0 p-1">
-                      <QuestionMedia
-                        key={question.id}
-                        compact
-                        wikiKey={wikiFromQuestionId(question.id)}
-                        image={question.image}
-                        emoji={question.emoji}
-                        text={question.question}
-                        alt=""
-                        variant={mediaVariant}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 md:hidden pt-0.5">
-                      <PlayQuestionHeader
-                        categoryEmoji={categoryEmoji}
-                        categoryName={categoryName}
-                        gameTitle={initialGame.title}
-                        questionText={question.question}
-                        difficulty={settings.difficulty}
-                        isTextRound={isTextRound}
-                        questionId={question.id}
-                        animateEntry={animateEntry}
-                      />
-                    </div>
+              <div className="play-game-card flex-1 min-w-0 flex flex-col md:flex-row items-center gap-3 md:gap-6 p-3 md:p-6">
+                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:max-w-[48%]">
+                  <div className="play-media-frame w-full flex justify-center">
+                    <QuestionMedia
+                      key={question.id}
+                      compact={mediaVariant === "product"}
+                      wikiKey={wikiFromQuestionId(question.id)}
+                      image={question.image}
+                      emoji={question.emoji}
+                      text={question.question}
+                      alt=""
+                      variant={mediaVariant}
+                    />
                   </div>
 
                   {(hintText || hintLoading) && (
@@ -514,19 +500,17 @@ export function GamePlayer({
                   )}
                 </div>
 
-                <div className="w-full md:flex-1 md:max-w-[48%] flex flex-col gap-1.5 md:gap-3">
-                  <div className="hidden md:block">
-                    <PlayQuestionHeader
-                      categoryEmoji={categoryEmoji}
-                      categoryName={categoryName}
-                      gameTitle={initialGame.title}
-                      questionText={question.question}
-                      difficulty={settings.difficulty}
-                      isTextRound={isTextRound}
-                      questionId={question.id}
-                      animateEntry={animateEntry}
-                    />
-                  </div>
+                <div className="w-full md:flex-1 md:max-w-[48%] flex flex-col gap-2 md:gap-3">
+                  <PlayQuestionHeader
+                    categoryEmoji={categoryEmoji}
+                    categoryName={categoryName}
+                    gameTitle={initialGame.title}
+                    questionText={question.question}
+                    difficulty={settings.difficulty}
+                    isTextRound={isTextRound}
+                    questionId={question.id}
+                    animateEntry={animateEntry}
+                  />
 
                   <PlayAnswerGrid
                     options={options}
