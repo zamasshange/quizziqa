@@ -1,4 +1,5 @@
 import { getMediaProxyUrl } from "@/lib/media/media-url";
+import { getStaticImageUrl } from "@/lib/media/wikimedia-resolve";
 import { gameTemplates } from "@/lib/games/templates";
 import type { GameQuestion } from "@/lib/types";
 
@@ -7,8 +8,8 @@ const TEMPLATE_PREFIXES = gameTemplates
   .sort((a, b) => b.length - a.length);
 
 /**
- * All wiki images load via same-origin /api/media — avoids Wikimedia hotlink blocks on mobile.
- * Flags keep flagcdn direct URLs (reliable CDN).
+ * Prefer direct upload.wikimedia.org URLs baked into questions at build time.
+ * Proxy URL is used client-side as fallback via wikiKey.
  */
 export function resolveEntityImage(
   wiki: string,
@@ -16,6 +17,8 @@ export function resolveEntityImage(
   opts?: { flagUrl?: string }
 ): string | undefined {
   if (opts?.flagUrl) return opts.flagUrl;
+  const direct = getStaticImageUrl(wiki);
+  if (direct) return direct;
   return getMediaProxyUrl(wiki);
 }
 
@@ -33,17 +36,27 @@ export function ensureQuestionImage(q: GameQuestion): GameQuestion {
   if (q.emoji && !q.image) return q;
   if (
     q.image &&
-    (q.image.includes("flagcdn.com") || q.image.includes("unsplash.com"))
+    (q.image.includes("flagcdn.com") ||
+      q.image.startsWith("https://upload.wikimedia.org/") ||
+      q.image.startsWith("http"))
   ) {
     return q;
   }
 
   const wiki = wikiFromQuestionId(q.id) ?? q.answer.replace(/ /g, "_");
-  const resolved = resolveEntityImage(wiki, q.answer);
-  if (resolved) return { ...q, image: resolved };
-  return q;
+  const direct = getStaticImageUrl(wiki);
+  if (direct) return { ...q, image: direct };
+
+  return { ...q, image: getMediaProxyUrl(wiki) };
 }
 
 export function ensureQuestionImages(questions: GameQuestion[]): GameQuestion[] {
   return questions.map(ensureQuestionImage).filter((q) => q.image || q.emoji);
+}
+
+export function getQuestionDirectImage(q: GameQuestion): string | undefined {
+  if (q.image?.startsWith("http")) return q.image;
+  const wiki = wikiFromQuestionId(q.id);
+  if (wiki) return getStaticImageUrl(wiki);
+  return undefined;
 }

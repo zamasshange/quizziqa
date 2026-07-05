@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { getMediaProxyUrl } from "@/lib/media/media-url";
 import type { MediaVariant } from "@/lib/media/images";
@@ -13,36 +13,66 @@ interface QuestionMediaProps {
   variant: MediaVariant;
   className?: string;
   wikiKey?: string;
-  /** Smaller frame — only for tall product images (phones, cars) on mobile */
   compact?: boolean;
-  /** Single clean frame inside play card — no extra white box */
   frameless?: boolean;
 }
 
+type LoadPhase = "direct" | "proxy" | "failed";
+
 function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: string }) {
-  const primarySrc = wikiKey ? getMediaProxyUrl(wikiKey) : fallbackSrc ?? "";
-  const [currentSrc, setCurrentSrc] = useState(primarySrc);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  const directSrc =
+    fallbackSrc?.startsWith("https://upload.wikimedia.org/") ||
+    fallbackSrc?.startsWith("http")
+      ? fallbackSrc
+      : undefined;
+  const proxySrc = wikiKey ? getMediaProxyUrl(wikiKey) : undefined;
+
+  const initialSrc = directSrc ?? proxySrc ?? "";
+  const [currentSrc, setCurrentSrc] = useState(initialSrc);
+  const [phase, setPhase] = useState<LoadPhase>(
+    directSrc ? "direct" : proxySrc ? "proxy" : "failed"
+  );
   const [loaded, setLoaded] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setCurrentSrc(wikiKey ? getMediaProxyUrl(wikiKey) : fallbackSrc ?? "");
-    setFailed(false);
-    setAttempt(0);
+    const nextDirect =
+      fallbackSrc?.startsWith("http") ? fallbackSrc : undefined;
+    const nextProxy = wikiKey ? getMediaProxyUrl(wikiKey) : undefined;
+    setCurrentSrc(nextDirect ?? nextProxy ?? "");
+    setPhase(nextDirect ? "direct" : nextProxy ? "proxy" : "failed");
     setLoaded(false);
   }, [wikiKey, fallbackSrc]);
 
+  // If direct CDN hangs, switch to same-origin proxy after 6s
+  useEffect(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (phase !== "direct" || loaded || !proxySrc) return;
+
+    timeoutRef.current = setTimeout(() => {
+      if (!loaded && proxySrc && currentSrc === directSrc) {
+        setPhase("proxy");
+        setCurrentSrc(proxySrc);
+        setLoaded(false);
+      }
+    }, 6000);
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [phase, loaded, proxySrc, directSrc, currentSrc]);
+
   const handleError = () => {
-    if (attempt === 0 && fallbackSrc && fallbackSrc !== currentSrc && fallbackSrc.startsWith("http")) {
-      setAttempt(1);
-      setCurrentSrc(fallbackSrc);
+    if (phase === "direct" && proxySrc) {
+      setPhase("proxy");
+      setCurrentSrc(proxySrc);
+      setLoaded(false);
       return;
     }
-    setFailed(true);
+    setPhase("failed");
   };
 
-  if (!currentSrc || failed) {
+  if (!currentSrc || phase === "failed") {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full min-h-[100px] text-black/35 py-6">
         <span className="text-2xl">📷</span>
@@ -61,6 +91,7 @@ function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: 
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        key={currentSrc}
         src={currentSrc}
         alt=""
         role="presentation"
@@ -181,10 +212,7 @@ export function QuestionMedia({
           "relative flex items-center justify-center overflow-hidden mx-auto",
           frameless
             ? sizeClass
-            : cn(
-                "rounded-xl bg-white p-2 border border-black/10",
-                sizeClass
-              )
+            : cn("rounded-xl bg-white p-2 border border-black/10", sizeClass)
         )}
       >
         <MediaImage wikiKey={wikiKey} fallbackSrc={image} />

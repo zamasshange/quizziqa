@@ -21,7 +21,7 @@ const getCachedDynamicGame = unstable_cache(
     if (!template) return null;
     return buildGameFromTemplate(template);
   },
-  ["dynamic-game-v13"],
+  ["dynamic-game-v14"],
   { revalidate: 86400, tags: ["wikipedia-games"] }
 );
 
