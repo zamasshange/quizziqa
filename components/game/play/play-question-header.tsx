@@ -53,7 +53,7 @@ export function PlayQuestionHeader({
         </div>
       </div>
       {!isTextRound && (
-        <h2 className="text-sm md:text-lg font-black text-black leading-tight">
+        <h2 className="text-sm md:text-lg lg:text-2xl xl:text-[1.65rem] font-black text-black leading-tight">
           {questionText}
         </h2>
       )}

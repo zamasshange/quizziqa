@@ -65,31 +65,31 @@ function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: 
 /** Only product (phone/car) uses compact on mobile — everything else keeps full size */
 const FRAME: Record<MediaVariant, { normal: string; compact: string }> = {
   flag: {
-    normal: "w-[240px] sm:w-[300px] h-[150px] sm:h-[188px]",
+    normal: "w-[240px] sm:w-[300px] lg:w-[380px] xl:w-[440px] h-[150px] sm:h-[188px] lg:h-[240px] xl:h-[280px]",
     compact: "w-[200px] h-[125px]",
   },
   landscape: {
-    normal: "w-full max-w-[300px] sm:max-w-[380px] h-[180px] sm:h-[240px]",
+    normal: "w-full max-w-[300px] sm:max-w-[380px] lg:max-w-[480px] xl:max-w-[560px] h-[180px] sm:h-[240px] lg:h-[320px] xl:h-[380px]",
     compact: "w-full max-w-[260px] h-[150px]",
   },
   food: {
-    normal: "w-full max-w-[280px] sm:max-w-[360px] h-[180px] sm:h-[220px]",
+    normal: "w-full max-w-[280px] sm:max-w-[360px] lg:max-w-[460px] xl:max-w-[520px] h-[180px] sm:h-[220px] lg:h-[300px] xl:h-[340px]",
     compact: "w-full max-w-[240px] h-[150px]",
   },
   square: {
-    normal: "w-[200px] sm:w-[260px] h-[200px] sm:h-[260px]",
+    normal: "w-[200px] sm:w-[260px] lg:w-[320px] xl:w-[380px] h-[200px] sm:h-[260px] lg:h-[320px] xl:h-[380px]",
     compact: "w-[170px] h-[170px]",
   },
   product: {
-    normal: "w-[140px] sm:w-[180px] h-[220px] sm:h-[280px]",
+    normal: "w-[140px] sm:w-[180px] lg:w-[220px] xl:w-[260px] h-[220px] sm:h-[280px] lg:h-[340px] xl:h-[400px]",
     compact: "w-[120px] h-[180px] max-h-[28vh]",
   },
   logo: {
-    normal: "w-[180px] sm:w-[240px] h-[180px] sm:h-[240px]",
+    normal: "w-[180px] sm:w-[240px] lg:w-[300px] xl:w-[360px] h-[180px] sm:h-[240px] lg:h-[300px] xl:h-[360px]",
     compact: "w-[150px] h-[150px]",
   },
   portrait: {
-    normal: "w-[180px] sm:w-[240px] md:w-[280px] h-[230px] sm:h-[300px] md:h-[360px]",
+    normal: "w-[180px] sm:w-[240px] md:w-[280px] lg:w-[360px] xl:w-[420px] h-[230px] sm:h-[300px] md:h-[360px] lg:h-[460px] xl:h-[540px]",
     compact: "w-[150px] h-[190px]",
   },
   emoji: { normal: "", compact: "" },

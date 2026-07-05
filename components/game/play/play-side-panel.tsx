@@ -24,11 +24,11 @@ export function PlaySidePanel({
   const xpBar = xpProgressInLevel(xp);
 
   return (
-    <aside className="hidden lg:flex flex-col gap-3 w-52 shrink-0">
-      <div className="play-game-card p-4 space-y-3">
+    <aside className="hidden lg:flex flex-col gap-3 lg:gap-4 w-52 lg:w-64 xl:w-72 shrink-0">
+      <div className="play-game-card p-4 lg:p-5 space-y-3 lg:space-y-4">
         <div className="text-center">
-          <div className="text-xs font-bold text-black/50 uppercase">Rank</div>
-          <div className="text-2xl font-black text-black">Level {level}</div>
+          <div className="text-xs lg:text-sm font-bold text-black/50 uppercase">Rank</div>
+          <div className="text-2xl lg:text-3xl font-black text-black">Level {level}</div>
           <div className="h-1.5 rounded-full bg-black/8 mt-2 overflow-hidden">
             <div
               className="h-full bg-btn-green rounded-full transition-all duration-700"

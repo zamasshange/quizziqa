@@ -13,6 +13,7 @@ interface PlayAnswerGridProps {
   onSelect: (option: string) => void;
   questionId: string;
   animateEntry?: boolean;
+  className?: string;
 }
 
 export function PlayAnswerGrid({
@@ -24,9 +25,10 @@ export function PlayAnswerGrid({
   onSelect,
   questionId,
   animateEntry = false,
+  className,
 }: PlayAnswerGridProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 md:gap-3">
+    <div className={cn("grid grid-cols-2 gap-2 md:gap-3", className)}>
       {options.map((option, i) => {
         const isSelected = selectedAnswer === option;
         const isCorrect = option.toLowerCase() === correctAnswer.toLowerCase();

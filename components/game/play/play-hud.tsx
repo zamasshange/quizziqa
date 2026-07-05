@@ -49,7 +49,7 @@ export function PlayHud({
   const xpBar = xpProgressInLevel(xp);
 
   return (
-    <header className="relative z-20 shrink-0 px-3 md:px-5 pt-[max(0.35rem,env(safe-area-inset-top))] pb-1.5 md:pb-2 max-w-6xl mx-auto w-full border-b border-black/10 bg-[#fffdf4]">
+    <header className="relative z-20 shrink-0 px-3 md:px-6 lg:px-10 xl:px-12 pt-[max(0.35rem,env(safe-area-inset-top))] pb-1.5 md:pb-3 max-w-[1720px] mx-auto w-full border-b border-black/10 bg-[#fffdf4]">
       <div className="flex items-center gap-1.5 md:gap-2 mb-1.5">
         <Link
           href={backHref}
