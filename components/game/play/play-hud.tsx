@@ -43,7 +43,7 @@ export function PlayHud({
   const xpBar = xpProgressInLevel(xp);
 
   return (
-    <header className="relative z-20 shrink-0 px-3 md:px-5 pt-[max(0.4rem,env(safe-area-inset-top))] pb-2 max-w-6xl mx-auto w-full">
+    <header className="relative z-20 shrink-0 px-3 md:px-5 pt-[max(0.4rem,env(safe-area-inset-top))] pb-2 max-w-6xl mx-auto w-full border-b border-black/10 bg-[#fffdf4]/95">
       <div className="flex items-center gap-2 mb-2">
         <Link
           href={backHref}

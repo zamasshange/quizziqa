@@ -86,10 +86,10 @@ body.play-mode {
 }
 
 .play-media-frame {
-  padding: 0.5rem;
+  padding: 0.25rem;
   border-radius: 1rem;
-  background: #fffdf4;
-  border: 2px solid rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 

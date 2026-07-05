@@ -14,9 +14,7 @@ export function AppShell({
   hideNav = false,
 }: AppShellProps) {
   return (
-    <div
-      className={`relative z-[1] flex flex-col min-h-dvh ${playMode ? "bg-petrol-dark" : ""}`}
-    >
+    <div className="relative z-[1] flex flex-col min-h-dvh bg-background">
       {!hideNav && <QuizNav minimal={playMode} />}
 
       <div className="relative flex flex-col flex-1 w-full overflow-hidden">

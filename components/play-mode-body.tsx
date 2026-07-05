@@ -9,11 +9,7 @@ export function PlayModeBody({ playMode }: { playMode: boolean }) {
   useEffect(() => {
     const isPlay = playMode || pathname.startsWith("/play/");
     document.body.classList.toggle("play-mode", isPlay);
-    if (isPlay) {
-      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#19444a");
-    } else {
-      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#FFFDF4");
-    }
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#FFFDF4");
     return () => document.body.classList.remove("play-mode");
   }, [playMode, pathname]);
 
