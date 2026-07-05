@@ -11,6 +11,8 @@ interface PlayQuestionHeaderProps {
   questionText: string;
   difficulty: Difficulty;
   isTextRound: boolean;
+  questionId: string;
+  animateEntry?: boolean;
 }
 
 export function PlayQuestionHeader({
@@ -20,14 +22,17 @@ export function PlayQuestionHeader({
   questionText,
   difficulty,
   isTextRound,
+  questionId,
+  animateEntry = false,
 }: PlayQuestionHeaderProps) {
   const stars = difficultyStars(difficulty);
 
   return (
     <motion.div
-      key={questionText}
-      initial={{ opacity: 0, y: -8 }}
+      key={questionId}
+      initial={animateEntry ? { opacity: 0, y: -6 } : false}
       animate={{ opacity: 1, y: 0 }}
+      transition={animateEntry ? { duration: 0.15 } : { duration: 0 }}
       className="mb-2 md:mb-4"
     >
       <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-1.5">

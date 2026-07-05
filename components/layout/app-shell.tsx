@@ -45,6 +45,9 @@ export function AppShell({
                     <Link href="/profile" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap">
                       Profile
                     </Link>
+                    <Link href="/settings" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap">
+                      Settings
+                    </Link>
                     <Link href="/search" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap">
                       Search
                     </Link>

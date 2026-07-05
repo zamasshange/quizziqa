@@ -6,7 +6,16 @@ import type { Game, GameQuestion } from "@/lib/types";
 import { QuestionMedia } from "@/components/game/question-media";
 import { inferMediaVariant } from "@/lib/media/images";
 import { usePlayerProgress } from "@/hooks/use-player-progress";
+import { useGameSettings } from "@/hooks/use-game-settings";
 import { calcRoundXp, calcRoundCoins } from "@/lib/game/session-utils";
+import {
+  buildSessionQueue,
+  shuffleOptions,
+  getAnswerPool,
+  recordSessionQuestions,
+} from "@/lib/game/question-engine";
+import { preloadImageLink, preloadImages } from "@/lib/game/image-cache";
+import { audioManager } from "@/lib/audio/audio-manager";
 import { PlayHud } from "@/components/game/play/play-hud";
 import { PlayAnswerGrid } from "@/components/game/play/play-answer-grid";
 import { PlayPowerUps } from "@/components/game/play/play-power-ups";
@@ -25,32 +34,24 @@ interface GamePlayerProps {
 
 type RoundState = "playing" | "correct" | "incorrect" | "finished";
 
-function shuffleArray<T>(arr: T[]): T[] {
-  const shuffled = [...arr];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
-function getOptions(question: GameQuestion, hideCount = 0): string[] {
-  const all = shuffleArray([question.answer, ...(question.alternatives ?? [])]);
-  if (hideCount <= 0) return all;
-  const wrong = all.filter((o) => o.toLowerCase() !== question.answer.toLowerCase());
-  const kept = wrong.slice(0, Math.max(0, wrong.length - hideCount));
-  return shuffleArray([question.answer, ...kept]);
+function initSession(initial: Game, count: number): GameQuestion[] {
+  return buildSessionQueue(initial.questions, initial.slug, count);
 }
 
 export function GamePlayer({
-  game,
+  game: initialGame,
   isDaily,
   categoryName,
   categorySlug,
   categoryEmoji,
 }: GamePlayerProps) {
   const { stats, hydrated, recordGame } = usePlayerProgress();
+  const { settings } = useGameSettings();
 
+  const [pool, setPool] = useState<GameQuestion[]>(initialGame.questions);
+  const [sessionQuestions, setSessionQuestions] = useState<GameQuestion[]>(() =>
+    initSession(initialGame, settings.questionCount)
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roundState, setRoundState] = useState<RoundState>("playing");
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -62,13 +63,10 @@ export function GamePlayer({
   const [revealUsed, setRevealUsed] = useState(0);
   const [doubleXpActive, setDoubleXpActive] = useState(false);
   const [timerFrozen, setTimerFrozen] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(game.timeLimit ?? 0);
   const [hintText, setHintText] = useState<string | null>(null);
   const [hintLoading, setHintLoading] = useState(false);
   const [displayFact, setDisplayFact] = useState<string | null>(null);
-  const [options, setOptions] = useState<string[]>(() =>
-    game.questions[0] ? getOptions(game.questions[0]) : []
-  );
+  const [options, setOptions] = useState<string[]>([]);
   const [combo, setCombo] = useState(0);
   const [bestCombo, setBestCombo] = useState(0);
   const [lives, setLives] = useState(3);
@@ -80,20 +78,82 @@ export function GamePlayer({
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [bonusXp, setBonusXp] = useState(0);
   const [showReveal, setShowReveal] = useState(false);
+  const [firstQuestion, setFirstQuestion] = useState(true);
+
+  const timerLimit = settings.timer || initialGame.timeLimit || 0;
+  const [timeLeft, setTimeLeft] = useState(timerLimit);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const freezeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordedRef = useRef(false);
   const answerTimeRef = useRef(Date.now());
+  const answerPoolRef = useRef<string[]>(getAnswerPool(initialGame.questions));
 
-  const question = game.questions[currentIndex];
+  const question = sessionQuestions[currentIndex];
   const backHref = categorySlug ? `/categories/${categorySlug}` : "/categories";
-  const mediaVariant = inferMediaVariant(game.slug, game.mode, {
+  const mediaVariant = inferMediaVariant(initialGame.slug, initialGame.mode, {
     hasImage: !!question?.image,
     hasEmoji: !!question?.emoji,
   });
   const isTextRound = mediaVariant === "text";
-  const baseXpPerQ = Math.round(game.xpReward / game.questions.length);
+  const baseXpPerQ = Math.round(initialGame.xpReward / sessionQuestions.length);
+
+  // Fetch full question pool for smart rotation
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/games/${initialGame.slug}/session?count=${settings.questionCount}`
+        );
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as Game & { questions: GameQuestion[] };
+        if (cancelled || !data.questions?.length) return;
+        setPool(data.questions);
+        answerPoolRef.current = getAnswerPool(data.questions);
+        const session = buildSessionQueue(
+          data.questions,
+          initialGame.slug,
+          settings.questionCount
+        );
+        setSessionQuestions(session);
+        preloadImages(session.slice(0, 3).map((q) => q.image));
+      } catch {
+        /* use SSR pool */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialGame.slug, settings.questionCount]);
+
+  const resetRound = useCallback(
+    (q: GameQuestion, hideWrong = 0) => {
+      setOptions(shuffleOptions(q, answerPoolRef.current, hideWrong));
+      setHintText(null);
+      setDisplayFact(null);
+      setSelectedAnswer(null);
+      setShowReveal(false);
+      if (timerLimit) setTimeLeft(timerLimit);
+      answerTimeRef.current = Date.now();
+    },
+    [timerLimit]
+  );
+
+  useEffect(() => {
+    if (!question) return;
+    resetRound(question);
+    setRoundState("playing");
+  }, [currentIndex, question?.id, resetRound]);
+
+  // Preload next question image immediately
+  useEffect(() => {
+    if (!question) return;
+    if (question.image) preloadImageLink(question.image);
+    const next = sessionQuestions[currentIndex + 1];
+    const after = sessionQuestions[currentIndex + 2];
+    preloadImages([next?.image, after?.image]);
+  }, [question, currentIndex, sessionQuestions]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -102,19 +162,8 @@ export function GamePlayer({
     };
   }, []);
 
-  useEffect(() => {
-    if (!question) return;
-    setOptions(getOptions(question));
-    setHintText(null);
-    setDisplayFact(null);
-    setSelectedAnswer(null);
-    setRoundState("playing");
-    setShowReveal(false);
-    if (game.timeLimit) setTimeLeft(game.timeLimit);
-    answerTimeRef.current = Date.now();
-  }, [currentIndex, game.timeLimit, question?.id]);
-
   const enrichFact = useCallback(async (baseFact: string, answer: string) => {
+    setDisplayFact(baseFact);
     try {
       const res = await fetch("/api/ai/fact", {
         method: "POST",
@@ -122,9 +171,9 @@ export function GamePlayer({
         body: JSON.stringify({ answer, context: baseFact }),
       });
       const data = await res.json();
-      setDisplayFact(data.fact ?? baseFact);
+      if (data.fact) setDisplayFact(data.fact);
     } catch {
-      setDisplayFact(baseFact);
+      /* keep base fact */
     }
   }, []);
 
@@ -136,13 +185,14 @@ export function GamePlayer({
       setCombo(0);
       setLives((l) => Math.max(0, l - 1));
       setRoundState("incorrect");
+      audioManager.playWrong();
       enrichFact(question.fact, question.answer);
     },
     [question, roundState, enrichFact]
   );
 
   useEffect(() => {
-    if (!game.timeLimit || roundState !== "playing" || timerFrozen) {
+    if (!timerLimit || roundState !== "playing" || timerFrozen) {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
@@ -153,13 +203,14 @@ export function GamePlayer({
           handleWrong(null);
           return 0;
         }
+        if (t <= 5 && t > 4) audioManager.play("countdown");
         return t - 1;
       });
     }, 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [currentIndex, roundState, game.timeLimit, timerFrozen, handleWrong]);
+  }, [currentIndex, roundState, timerLimit, timerFrozen, handleWrong]);
 
   const handleAnswer = useCallback(
     (answer: string) => {
@@ -167,7 +218,7 @@ export function GamePlayer({
       if (timerRef.current) clearInterval(timerRef.current);
 
       const elapsed = Date.now() - answerTimeRef.current;
-      const fastBonus = game.timeLimit ? elapsed < game.timeLimit * 500 : elapsed < 8000;
+      const fastBonus = timerLimit ? elapsed < timerLimit * 500 : elapsed < 8000;
       const isCorrect = answer.toLowerCase() === question.answer.toLowerCase();
 
       setSelectedAnswer(answer);
@@ -187,6 +238,7 @@ export function GamePlayer({
         setLastRoundCoins(coins);
         setDoubleXpActive(false);
         setRoundState("correct");
+        audioManager.playCorrect();
       } else {
         handleWrong(answer);
         return;
@@ -194,18 +246,27 @@ export function GamePlayer({
 
       enrichFact(question.fact, question.answer);
     },
-    [roundState, question, combo, baseXpPerQ, doubleXpActive, game.timeLimit, handleWrong, enrichFact]
+    [roundState, question, combo, baseXpPerQ, doubleXpActive, timerLimit, handleWrong, enrichFact]
   );
 
-  const handleNext = useCallback(() => {
-    if (currentIndex + 1 >= game.questions.length) {
+  const advanceQuestion = useCallback(() => {
+    audioManager.playNext();
+    setFirstQuestion(false);
+    if (currentIndex + 1 >= sessionQuestions.length) {
       setRoundState("finished");
+      recordSessionQuestions(
+        initialGame.slug,
+        sessionQuestions.map((q) => q.id)
+      );
     } else {
+      setRoundState("playing");
       setCurrentIndex((i) => i + 1);
     }
-  }, [currentIndex, game.questions.length]);
+  }, [currentIndex, sessionQuestions, initialGame.slug]);
 
-  const handleRestart = useCallback(() => {
+  const startNewSession = useCallback(() => {
+    const session = buildSessionQueue(pool, initialGame.slug, settings.questionCount);
+    setSessionQuestions(session);
     setCurrentIndex(0);
     setRoundState("playing");
     setSelectedAnswer(null);
@@ -226,31 +287,34 @@ export function GamePlayer({
     setDisplayFact(null);
     setNewAchievements([]);
     setBonusXp(0);
+    setFirstQuestion(true);
     recordedRef.current = false;
-    if (game.timeLimit) setTimeLeft(game.timeLimit);
-    if (game.questions[0]) setOptions(getOptions(game.questions[0]));
-  }, [game.timeLimit, game.questions]);
+    if (session[0]) resetRound(session[0]);
+    preloadImages(session.slice(0, 3).map((q) => q.image));
+  }, [pool, initialGame.slug, settings.questionCount, resetRound]);
 
   useEffect(() => {
     if (roundState !== "finished" || recordedRef.current) return;
     recordedRef.current = true;
     const outcome = recordGame({
-      gameId: game.id,
-      gameSlug: game.slug,
-      categoryId: game.categoryId,
+      gameId: initialGame.id,
+      gameSlug: initialGame.slug,
+      categoryId: initialGame.categoryId,
       score,
-      totalQuestions: game.questions.length,
+      totalQuestions: sessionQuestions.length,
       xpEarned: sessionXp,
       isDaily,
     });
     setNewAchievements(outcome.newAchievements);
     setBonusXp(outcome.bonusXp);
-  }, [roundState, score, game, isDaily, recordGame, sessionXp]);
+    audioManager.play("victory");
+  }, [roundState, score, initialGame, isDaily, recordGame, sessionXp, sessionQuestions.length]);
 
   const handleHint = async () => {
-    if (hintsUsed >= game.maxHints || !question || hintLoading) return;
+    if (!settings.hintsEnabled || hintsUsed >= initialGame.maxHints || !question || hintLoading) return;
     setHintsUsed((h) => h + 1);
     setHintLoading(true);
+    audioManager.play("powerUp");
     try {
       const res = await fetch("/api/ai/hint", {
         method: "POST",
@@ -272,22 +336,24 @@ export function GamePlayer({
   };
 
   const handleSkip = () => {
-    if (skipsUsed >= game.maxSkips) return;
+    if (skipsUsed >= initialGame.maxSkips) return;
     setSkipsUsed((s) => s + 1);
     setCombo(0);
-    handleNext();
+    advanceQuestion();
   };
 
   const handleFifty = () => {
     if (fiftyUsed >= 1 || !question) return;
     setFiftyUsed(1);
-    setOptions(getOptions(question, 2));
+    setOptions(shuffleOptions(question, answerPoolRef.current, 2));
+    audioManager.play("powerUp");
   };
 
   const handleFreeze = () => {
-    if (freezeUsed >= 1 || !game.timeLimit) return;
+    if (freezeUsed >= 1 || !timerLimit) return;
     setFreezeUsed(1);
     setTimerFrozen(true);
+    audioManager.play("powerUp");
     if (freezeRef.current) clearTimeout(freezeRef.current);
     freezeRef.current = setTimeout(() => setTimerFrozen(false), 5000);
   };
@@ -296,19 +362,30 @@ export function GamePlayer({
     if (revealUsed >= 1) return;
     setRevealUsed(1);
     setShowReveal(true);
+    audioManager.play("powerUp");
   };
 
   const handleDouble = () => {
     if (doubleXpActive) return;
     setDoubleXpActive(true);
+    audioManager.play("powerUp");
   };
 
-  if (!question && roundState !== "finished") return null;
+  const maxHints = settings.hintsEnabled ? initialGame.maxHints : 0;
+
+  if (!question && roundState !== "finished") {
+    return (
+      <div className="flex-1 flex items-center justify-center text-black/50 font-bold text-sm">
+        Loading questions…
+      </div>
+    );
+  }
 
   const totalCoins = (hydrated ? stats.coins ?? 0 : 0) + sessionCoins;
   const playerXp = hydrated ? stats.xp : 0;
   const playerLevel = hydrated ? stats.level : 1;
   const playerStreak = hydrated ? stats.streak : 0;
+  const animateEntry = firstQuestion && settings.animations === "full";
 
   return (
     <div className="relative flex flex-col h-dvh max-h-dvh overflow-hidden w-full">
@@ -321,26 +398,26 @@ export function GamePlayer({
         lives={lives}
         score={score}
         currentIndex={currentIndex}
-        total={game.questions.length}
-        difficulty={question?.difficulty ?? game.difficulty}
+        total={sessionQuestions.length}
+        difficulty={question?.difficulty ?? initialGame.difficulty}
         categoryEmoji={categoryEmoji}
         isDaily={isDaily}
         combo={combo}
-        timeLeft={game.timeLimit && roundState === "playing" ? timeLeft : undefined}
+        timeLeft={timerLimit && roundState === "playing" ? timeLeft : undefined}
         timerFrozen={timerFrozen}
       />
 
       {roundState === "finished" ? (
         <PlayVictoryScreen
           score={score}
-          total={game.questions.length}
+          total={sessionQuestions.length}
           xpEarned={sessionXp + bonusXp + (isDaily ? 25 : 0)}
           coinsEarned={sessionCoins}
           bestCombo={bestCombo}
-          accuracy={Math.round((score / game.questions.length) * 100)}
+          accuracy={Math.round((score / sessionQuestions.length) * 100)}
           newAchievements={newAchievements}
           backHref={backHref}
-          onReplay={handleRestart}
+          onReplay={startNewSession}
         />
       ) : (
         <div className="relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -357,10 +434,11 @@ export function GamePlayer({
               />
 
               <div className="play-game-card flex-1 min-w-0 flex flex-col md:flex-row items-center gap-3 md:gap-6 p-3 md:p-6">
-                {/* Media */}
                 <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:max-w-[48%]">
                   <div className="play-media-frame">
                     <QuestionMedia
+                      key={question.id}
+                      questionKey={question.id}
                       image={question.image}
                       emoji={question.emoji}
                       text={question.question}
@@ -390,15 +468,16 @@ export function GamePlayer({
                   )}
                 </div>
 
-                {/* Answers */}
                 <div className="w-full md:flex-1 md:max-w-[48%] flex flex-col gap-2 md:gap-3">
                   <PlayQuestionHeader
                     categoryEmoji={categoryEmoji}
                     categoryName={categoryName}
-                    gameTitle={game.title}
+                    gameTitle={initialGame.title}
                     questionText={question.question}
                     difficulty={question.difficulty}
                     isTextRound={isTextRound}
+                    questionId={question.id}
+                    animateEntry={animateEntry}
                   />
 
                   <PlayAnswerGrid
@@ -408,16 +487,17 @@ export function GamePlayer({
                     revealed={roundState === "correct" || roundState === "incorrect"}
                     disabled={roundState !== "playing"}
                     onSelect={handleAnswer}
+                    questionId={question.id}
+                    animateEntry={animateEntry}
                   />
 
-                  {/* Desktop: power-ups inline */}
                   {roundState === "playing" && (
                     <div className="hidden md:block">
                       <PlayPowerUps
-                        hintsLeft={game.maxHints - hintsUsed}
-                        skipsLeft={game.maxSkips - skipsUsed}
+                        hintsLeft={maxHints - hintsUsed}
+                        skipsLeft={initialGame.maxSkips - skipsUsed}
                         fiftyLeft={1 - fiftyUsed}
-                        freezeLeft={game.timeLimit ? 1 - freezeUsed : 0}
+                        freezeLeft={timerLimit ? 1 - freezeUsed : 0}
                         revealLeft={1 - revealUsed}
                         doubleActive={doubleXpActive}
                         hintLoading={hintLoading}
@@ -435,15 +515,14 @@ export function GamePlayer({
             </div>
           </div>
 
-          {/* Mobile: sticky power-up bar — always fully visible */}
           {roundState === "playing" && (
             <div className="shrink-0 md:hidden border-t border-black/10 bg-[#fffdf4] px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <PlayPowerUps
                 compact
-                hintsLeft={game.maxHints - hintsUsed}
-                skipsLeft={game.maxSkips - skipsUsed}
+                hintsLeft={maxHints - hintsUsed}
+                skipsLeft={initialGame.maxSkips - skipsUsed}
                 fiftyLeft={1 - fiftyUsed}
-                freezeLeft={game.timeLimit ? 1 - freezeUsed : 0}
+                freezeLeft={timerLimit ? 1 - freezeUsed : 0}
                 revealLeft={1 - revealUsed}
                 doubleActive={doubleXpActive}
                 hintLoading={hintLoading}
@@ -467,7 +546,7 @@ export function GamePlayer({
           xpGained={lastRoundXp}
           coinsGained={lastRoundCoins}
           combo={combo}
-          onContinue={handleNext}
+          onContinue={advanceQuestion}
         />
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { isImageCached } from "@/lib/game/image-cache";
 import type { MediaVariant } from "@/lib/media/images";
 
 interface QuestionMediaProps {
@@ -11,6 +12,7 @@ interface QuestionMediaProps {
   text?: string;
   variant: MediaVariant;
   className?: string;
+  questionKey?: string;
 }
 
 function MediaImage({
@@ -18,31 +20,40 @@ function MediaImage({
   alt,
   className,
   onError,
+  instant,
 }: {
   src: string;
   alt: string;
   className?: string;
   onError: () => void;
+  instant?: boolean;
 }) {
-  const [loaded, setLoaded] = useState(false);
+  const cached = instant || isImageCached(src);
+  const [loaded, setLoaded] = useState(cached);
+
+  useEffect(() => {
+    setLoaded(cached || isImageCached(src));
+  }, [src, cached]);
 
   return (
     <>
       {!loaded && (
-        <div className="absolute inset-0 bg-white/5 animate-pulse" aria-hidden />
+        <div className="absolute inset-0 bg-black/5 animate-pulse rounded-inherit" aria-hidden />
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}
         className={cn(
-          "absolute inset-0 w-full h-full transition-opacity duration-300",
+          "absolute inset-0 w-full h-full",
           loaded ? "opacity-100" : "opacity-0",
+          !instant && !cached && loaded && "transition-opacity duration-100",
           className
         )}
         onLoad={() => setLoaded(true)}
         onError={onError}
-        decoding="async"
+        decoding="sync"
+        fetchPriority="high"
       />
     </>
   );
@@ -55,12 +66,14 @@ export function QuestionMedia({
   text,
   variant,
   className,
+  questionKey,
 }: QuestionMediaProps) {
   const [error, setError] = useState(false);
+  const instant = !!image && isImageCached(image);
 
   useEffect(() => {
     setError(false);
-  }, [image]);
+  }, [image, questionKey]);
 
   if (variant === "text" && text) {
     const quoteMatch = text.match(/^("[^"]+"|'[^']+')/);
@@ -69,19 +82,9 @@ export function QuestionMedia({
 
     return (
       <div className={cn("flex items-center justify-center", className)}>
-        <div
-          className={cn(
-            "w-[280px] sm:w-[340px] md:w-[400px] px-6 py-8 md:py-10",
-            "rounded-2xl bg-white/10 border-2 border-white/25",
-            "shadow-[0_16px_48px_rgba(0,0,0,0.4)] text-center"
-          )}
-        >
-          <p className="text-xl md:text-2xl font-black text-white leading-snug italic">
-            {quote}
-          </p>
-          {prompt && (
-            <p className="mt-4 text-sm font-bold text-white/70">{prompt}</p>
-          )}
+        <div className="w-[280px] sm:w-[340px] md:w-[400px] px-6 py-8 md:py-10 rounded-2xl bg-secondary border border-black/15 shadow-soft-1 text-center">
+          <p className="text-xl md:text-2xl font-black text-black leading-snug italic">{quote}</p>
+          {prompt && <p className="mt-4 text-sm font-bold text-black/60">{prompt}</p>}
         </div>
       </div>
     );
@@ -91,7 +94,7 @@ export function QuestionMedia({
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-2xl border-[3px] border-white/25 bg-white/5",
+          "flex items-center justify-center rounded-2xl border-2 border-black/15 bg-secondary",
           "w-full max-w-[280px] aspect-square mx-auto",
           className
         )}
@@ -105,8 +108,8 @@ export function QuestionMedia({
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center gap-2 rounded-2xl border-[3px] border-white/20 bg-white/5",
-          "w-full max-w-[280px] aspect-[3/4] mx-auto text-white/50",
+          "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-black/15 bg-secondary",
+          "w-full max-w-[280px] aspect-[3/4] mx-auto text-black/40",
           className
         )}
       >
@@ -116,25 +119,18 @@ export function QuestionMedia({
     );
   }
 
-  /* Flags — fixed 3:2 frame, always visible size */
   if (variant === "flag") {
     return (
       <div className={cn("flex items-center justify-center", className)}>
-        <div
-          className={cn(
-            "relative w-[280px] sm:w-[340px] md:w-[420px] aspect-[3/2]",
-            "rounded-[4px] overflow-hidden bg-white/5",
-            "ring-[3px] ring-white/95",
-            "shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
-          )}
-        >
+        <div className="relative w-[280px] sm:w-[340px] md:w-[420px] aspect-[3/2] rounded-[4px] overflow-hidden bg-white ring-2 ring-black/10 shadow-soft-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
+            key={questionKey ?? image}
             src={image}
             alt={alt || "Flag"}
             className="block w-full h-full object-cover"
-            loading="eager"
-            decoding="async"
+            decoding="sync"
+            fetchPriority="high"
             onError={() => setError(true)}
           />
         </div>
@@ -145,18 +141,13 @@ export function QuestionMedia({
   if (variant === "landscape") {
     return (
       <div className={cn("relative flex items-center justify-center", className)}>
-        <div
-          className={cn(
-            "relative w-full max-w-[420px] md:max-w-[520px] aspect-[4/3]",
-            "rounded-2xl overflow-hidden",
-            "shadow-[0_16px_48px_rgba(0,0,0,0.45)] ring-1 ring-white/20"
-          )}
-        >
+        <div className="relative w-full max-w-[420px] md:max-w-[520px] aspect-[4/3] rounded-2xl overflow-hidden shadow-soft-1 ring-1 ring-black/10">
           <MediaImage
             src={image}
             alt={alt || "Guess this"}
             className="object-cover object-center"
             onError={() => setError(true)}
+            instant={instant}
           />
         </div>
       </div>
@@ -166,32 +157,25 @@ export function QuestionMedia({
   if (variant === "square" || variant === "logo") {
     return (
       <div className={cn("flex items-center justify-center", className)}>
-        <div
-          className={cn(
-            "relative w-full max-w-[300px] sm:max-w-[340px] md:max-w-[380px] aspect-square",
-            "rounded-2xl overflow-hidden",
-            "shadow-[0_16px_48px_rgba(0,0,0,0.45)] ring-1 ring-white/20"
-          )}
-        >
+        <div className="relative w-full max-w-[300px] sm:max-w-[340px] md:max-w-[380px] aspect-square rounded-2xl overflow-hidden shadow-soft-1 ring-1 ring-black/10">
           <MediaImage
             src={image}
             alt={alt || "Guess this"}
             className={variant === "logo" ? "object-contain p-6" : "object-cover object-center"}
             onError={() => setError(true)}
+            instant={instant}
           />
         </div>
       </div>
     );
   }
 
-  /* Portrait — celebrities, athletes, people */
   return (
     <div className={cn("relative flex items-center justify-center", className)}>
       <div
         className={cn(
           "relative w-[160px] sm:w-[220px] md:w-[320px] aspect-[3/4] max-h-[32vh] md:max-h-none",
-          "rounded-2xl overflow-hidden",
-          "shadow-[0_16px_48px_rgba(0,0,0,0.5)] ring-1 ring-white/25"
+          "rounded-2xl overflow-hidden shadow-soft-1 ring-1 ring-black/10"
         )}
       >
         <MediaImage
@@ -199,6 +183,7 @@ export function QuestionMedia({
           alt={alt || "Guess this"}
           className="object-cover object-[center_20%]"
           onError={() => setError(true)}
+          instant={instant}
         />
       </div>
     </div>

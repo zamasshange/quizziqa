@@ -11,6 +11,8 @@ interface PlayAnswerGridProps {
   revealed: boolean;
   disabled: boolean;
   onSelect: (option: string) => void;
+  questionId: string;
+  animateEntry?: boolean;
 }
 
 export function PlayAnswerGrid({
@@ -20,6 +22,8 @@ export function PlayAnswerGrid({
   revealed,
   disabled,
   onSelect,
+  questionId,
+  animateEntry = false,
 }: PlayAnswerGridProps) {
   return (
     <div className="grid grid-cols-2 gap-2 md:gap-3">
@@ -34,15 +38,15 @@ export function PlayAnswerGrid({
 
         return (
           <motion.button
-            key={option}
+            key={`${questionId}-${option}`}
             type="button"
             disabled={disabled}
             onClick={() => onSelect(option)}
-            whileHover={!disabled ? { y: -3, scale: 1.02 } : undefined}
-            whileTap={!disabled ? { scale: 0.96 } : undefined}
-            initial={{ opacity: 0, y: 12 }}
+            whileHover={!disabled ? { y: -2, scale: 1.01 } : undefined}
+            whileTap={!disabled ? { scale: 0.97 } : undefined}
+            initial={animateEntry ? { opacity: 0, y: 8 } : false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06, duration: 0.25 }}
+            transition={animateEntry ? { delay: i * 0.03, duration: 0.15 } : { duration: 0 }}
             className={cn(
               "play-answer-btn touch-target",
               stateClass,

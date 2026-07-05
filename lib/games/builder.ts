@@ -35,29 +35,42 @@ function difficultyForIndex(i: number, total: number): Difficulty {
   return "expert";
 }
 
+export async function buildFullQuestionPool(
+  template: GameTemplate
+): Promise<GameQuestion[]> {
+  return buildQuestionsFromEntities(template, template.entities);
+}
+
 export async function buildGameFromTemplate(
   template: GameTemplate
 ): Promise<Game> {
   const count = template.questionCount ?? template.entities.length;
-  const selected = shuffle(template.entities).slice(0, count);
-  const wikiTitles = selected.map((e) => e.wiki);
+  const pool = await buildFullQuestionPool(template);
+  const questions = shuffle(pool).slice(0, count);
+  return templateToGame(template, questions);
+}
 
-  // Parallel: wiki data + optional flags
+async function buildQuestionsFromEntities(
+  template: GameTemplate,
+  entities: EntityEntry[]
+): Promise<GameQuestion[]> {
+  const wikiTitles = entities.map((e) => e.wiki);
+
   const [wikiData, flagImages] = await Promise.all([
     fetchWikiEntities(wikiTitles),
     template.useFlags
-      ? fetchFlagImages(selected.map((e) => ({ wiki: e.wiki, answer: e.answer })))
+      ? fetchFlagImages(entities.map((e) => ({ wiki: e.wiki, answer: e.answer })))
       : Promise.resolve(new Map()),
   ]);
 
-  const allAnswers = selected.map(
+  const allAnswers = entities.map(
     (e) => e.answer ?? e.wiki.replace(/_/g, " ")
   );
 
   const questions: GameQuestion[] = [];
 
-  for (let i = 0; i < selected.length; i++) {
-    const entity = selected[i];
+  for (let i = 0; i < entities.length; i++) {
+    const entity = entities[i];
     const wiki = wikiData.get(entity.wiki);
     const answer = entity.answer ?? entity.wiki.replace(/_/g, " ");
     const image =
@@ -68,40 +81,17 @@ export async function buildGameFromTemplate(
     if (!image && template.mode === "guess-from-image") continue;
 
     questions.push({
-      id: `${template.id}-q${i}`,
+      id: `${template.id}-${entity.wiki}`,
       question: template.questionPrompt,
       answer,
       alternatives: pickAlternatives(answer, allAnswers),
       image,
       fact: wiki?.fact ?? `Learn more about ${answer} on Wikipedia.`,
-      difficulty: difficultyForIndex(i, selected.length),
+      difficulty: difficultyForIndex(i, entities.length),
     });
   }
 
-  if (questions.length < 3) {
-    // Retry with more entities + fallback images — never ship image-less questions
-    const extra = shuffle(template.entities).slice(0, 15);
-    for (const entity of extra) {
-      if (questions.length >= (template.questionCount ?? 8)) break;
-      if (questions.some((q) => q.answer === (entity.answer ?? entity.wiki.replace(/_/g, " "))))
-        continue;
-      const wiki = wikiData.get(entity.wiki);
-      const answer = entity.answer ?? entity.wiki.replace(/_/g, " ");
-      const image = wiki?.image ?? getFallbackImage(entity.wiki);
-      if (!image) continue;
-      questions.push({
-        id: `${template.id}-q${questions.length}`,
-        question: template.questionPrompt,
-        answer,
-        alternatives: pickAlternatives(answer, allAnswers),
-        image,
-        fact: wiki?.fact ?? `Learn more about ${answer} on Wikipedia.`,
-        difficulty: "medium",
-      });
-    }
-  }
-
-  return templateToGame(template, questions);
+  return questions;
 }
 
 function templateToGame(template: GameTemplate, questions: GameQuestion[]): Game {
