@@ -1,212 +1,170 @@
 /**
- * Client-side image pipeline — preload, cache, dedupe, retry.
- * Images are ready BEFORE the player sees the question.
+ * Client image pipeline — uses Image() preloading (no fetch/CORS issues).
+ * Tracks which URLs are browser-cached and ready for instant <img> display.
  */
 import type { GameQuestion } from "@/lib/types";
 import type { MediaVariant } from "@/lib/media/images";
 import { wikiFromQuestionId } from "@/lib/media/resolve-image";
 import {
   cacheKeyFor,
-  getDirectCandidates,
-  getImageCandidates,
+  getFlagUrl,
+  getPlayableUrls,
 } from "@/lib/media/image-candidates";
-import { idbGet, idbPut } from "@/lib/media/image-store";
 
-const ATTEMPT_TIMEOUT_MS = 4000;
-const MAX_CONCURRENT = 4;
-const LOOKAHEAD = 6;
+const TIMEOUT_MS = 6000;
+const MAX_CONCURRENT = 6;
+const LOOKAHEAD = 8;
 
-interface CacheEntry {
-  blobUrl: string;
-  refs: number;
+const ready = new Set<string>();
+const inflight = new Map<string, Promise<boolean>>();
+let active = 0;
+const queue: Array<() => void> = [];
+
+function acquire(): Promise<void> {
+  if (active < MAX_CONCURRENT) {
+    active++;
+    return Promise.resolve();
+  }
+  return new Promise((r) => queue.push(r));
 }
 
-class ImagePipeline {
-  private memory = new Map<string, CacheEntry>();
-  private inflight = new Map<string, Promise<string | null>>();
-  private active = 0;
-  private waiters: Array<() => void> = [];
+function release(): void {
+  active--;
+  queue.shift()?.();
+}
 
-  /** Synchronous memory hit — instant display. */
-  getCached(key: string): string | null {
-    const entry = this.memory.get(key);
-    return entry?.blobUrl ?? null;
-  }
+/** Preload a URL into the browser image cache via Image(). */
+export function preloadUrl(url: string): Promise<boolean> {
+  if (!url) return Promise.resolve(false);
+  if (ready.has(url)) return Promise.resolve(true);
 
-  retain(key: string, blobUrl: string): void {
-    const existing = this.memory.get(key);
-    if (existing) {
-      existing.refs++;
-      return;
-    }
-    this.memory.set(key, { blobUrl, refs: 1 });
-  }
+  const pending = inflight.get(url);
+  if (pending) return pending;
 
-  release(key: string): void {
-    const entry = this.memory.get(key);
-    if (!entry) return;
-    entry.refs--;
-    if (entry.refs <= 0) {
-      URL.revokeObjectURL(entry.blobUrl);
-      this.memory.delete(key);
-    }
-  }
-
-  private async acquireSlot(): Promise<void> {
-    if (this.active < MAX_CONCURRENT) {
-      this.active++;
-      return;
-    }
-    await new Promise<void>((r) => this.waiters.push(r));
-    this.active++;
-  }
-
-  private releaseSlot(): void {
-    this.active--;
-    const next = this.waiters.shift();
-    if (next) next();
-  }
-
-  private async fetchUrl(url: string): Promise<Blob | null> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
+  const promise = (async () => {
+    await acquire();
     try {
-      const res = await fetch(url, {
-        signal: controller.signal,
-        credentials: url.startsWith("/") ? "same-origin" : "omit",
-        cache: "force-cache",
+      const ok = await new Promise<boolean>((resolve) => {
+        const img = new Image();
+        let settled = false;
+        const done = (success: boolean) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(success);
+        };
+        const timer = setTimeout(() => done(false), TIMEOUT_MS);
+        img.onload = () => done(true);
+        img.onerror = () => done(false);
+        img.decoding = "async";
+        img.src = url;
       });
-      if (!res.ok) return null;
-      const blob = await res.blob();
-      if (!blob.size || !blob.type.startsWith("image/")) return null;
-      return blob;
-    } catch {
-      return null;
+      if (ok) ready.add(url);
+      return ok;
     } finally {
-      clearTimeout(timer);
+      release();
+      inflight.delete(url);
     }
+  })();
+
+  inflight.set(url, promise);
+  return promise;
+}
+
+export function isUrlReady(url: string): boolean {
+  return ready.has(url);
+}
+
+/** First ready URL from a candidate list, or null. */
+export function firstReady(urls: string[]): string | null {
+  return urls.find((u) => ready.has(u)) ?? null;
+}
+
+/** Try each URL in order until one loads. Returns the winning URL. */
+export async function loadFirst(urls: string[]): Promise<string | null> {
+  const cached = firstReady(urls);
+  if (cached) return cached;
+
+  for (const url of urls) {
+    const ok = await preloadUrl(url);
+    if (ok) return url;
   }
+  return null;
+}
 
-  private async loadCandidates(
-    key: string,
-    candidates: string[]
-  ): Promise<string | null> {
-    const cached = this.getCached(key);
-    if (cached) return cached;
+export function urlsForQuestion(
+  q: GameQuestion,
+  variant: MediaVariant
+): string[] {
+  if (q.emoji && !q.image) return [];
+  if (q.image?.includes("flagcdn.com")) return getFlagUrl(q.image);
+  const wiki = wikiFromQuestionId(q.id);
+  if (wiki) return getPlayableUrls(wiki, variant);
+  if (q.image?.startsWith("http")) return [q.image];
+  return [];
+}
 
-    const pending = this.inflight.get(key);
-    if (pending) return pending;
+function preloadQuestion(
+  q: GameQuestion,
+  variant: MediaVariant,
+  priority: "high" | "low" = "low"
+): void {
+  const urls = urlsForQuestion(q, variant);
+  if (!urls.length) return;
 
-    const promise = (async () => {
-      const idbBlob = await idbGet(key);
-      if (idbBlob) {
-        const url = URL.createObjectURL(idbBlob);
-        this.memory.set(key, { blobUrl: url, refs: 1 });
-        return url;
-      }
+  const run = () => {
+    void loadFirst(urls);
+    urls.slice(1).forEach((u) => void preloadUrl(u));
+  };
 
-      for (const candidate of candidates) {
-        await this.acquireSlot();
-        try {
-          const blob = await this.fetchUrl(candidate);
-          if (blob) {
-            void idbPut(key, blob);
-            const url = URL.createObjectURL(blob);
-            this.memory.set(key, { blobUrl: url, refs: 1 });
-            return url;
-          }
-        } finally {
-          this.releaseSlot();
-        }
-      }
-      return null;
-    })();
-
-    this.inflight.set(key, promise);
-    try {
-      return await promise;
-    } finally {
-      this.inflight.delete(key);
-    }
-  }
-
-  async fetchWiki(
-    wiki: string,
-    variant: MediaVariant,
-    opts?: { silentRetry?: boolean }
-  ): Promise<string | null> {
-    const key = cacheKeyFor(wiki, variant);
-    const hit = await this.loadCandidates(key, getImageCandidates(wiki, variant));
-    if (hit || !opts?.silentRetry) return hit;
-
-    // Background silent retry with smaller proxy only
-    const small = getImageCandidates(wiki, variant).slice(-1);
-    return this.loadCandidates(`${key}:retry`, small);
-  }
-
-  async fetchDirect(
-    imageUrl: string,
-    variant: MediaVariant,
-    cacheKey?: string
-  ): Promise<string | null> {
-    const key = cacheKey ?? `direct:${imageUrl}:${variant}`;
-    return this.loadCandidates(key, getDirectCandidates(imageUrl, variant));
-  }
-
-  /** Preload a single question image (non-blocking). */
-  preloadQuestion(
-    q: GameQuestion,
-    variant: MediaVariant,
-    priority: "high" | "low" = "low"
-  ): void {
-    if (q.emoji && !q.image) return;
-
-    const wiki = wikiFromQuestionId(q.id);
-    const run = async () => {
-      if (q.image?.includes("flagcdn.com")) {
-        await this.fetchDirect(q.image, variant, `flag:${q.id}`);
-        return;
-      }
-      if (wiki) {
-        await this.fetchWiki(wiki, variant);
-      } else if (q.image?.startsWith("http")) {
-        await this.fetchDirect(q.image, variant, `img:${q.id}`);
-      }
-    };
-
-    if (priority === "high") {
-      void run();
-    } else {
-      if (typeof requestIdleCallback !== "undefined") {
-        requestIdleCallback(() => void run(), { timeout: 2000 });
-      } else {
-        setTimeout(() => void run(), 50);
-      }
-    }
-  }
-
-  /** Rolling buffer — preload current + next N questions. */
-  preloadAhead(
-    questions: GameQuestion[],
-    currentIndex: number,
-    variantFor: (q: GameQuestion) => MediaVariant,
-    count = LOOKAHEAD
-  ): void {
-    for (let i = currentIndex; i < Math.min(questions.length, currentIndex + count); i++) {
-      const q = questions[i];
-      const variant = variantFor(q);
-      const priority = i === currentIndex ? "high" : i <= currentIndex + 2 ? "high" : "low";
-      this.preloadQuestion(q, variant, priority);
-    }
-  }
-
-  /** Warm entire session on game entry. */
-  warmSession(
-    questions: GameQuestion[],
-    variantFor: (q: GameQuestion) => MediaVariant
-  ): void {
-    this.preloadAhead(questions, 0, variantFor, Math.min(questions.length, 10));
+  if (priority === "high") {
+    run();
+  } else {
+    setTimeout(run, 30);
   }
 }
 
-export const imagePipeline = new ImagePipeline();
+export function preloadAhead(
+  questions: GameQuestion[],
+  currentIndex: number,
+  variantFor: (q: GameQuestion) => MediaVariant,
+  count = LOOKAHEAD
+): void {
+  for (
+    let i = currentIndex;
+    i < Math.min(questions.length, currentIndex + count);
+    i++
+  ) {
+    const q = questions[i];
+    const priority =
+      i === currentIndex ? "high" : i <= currentIndex + 3 ? "high" : "low";
+    preloadQuestion(q, variantFor(q), priority);
+  }
+}
+
+export function warmSession(
+  questions: GameQuestion[],
+  variantFor: (q: GameQuestion) => MediaVariant
+): void {
+  preloadAhead(questions, 0, variantFor, Math.min(questions.length, 12));
+}
+
+/** Legacy compat — sync cache check by wiki key */
+export function getCachedByKey(key: string): string | null {
+  return null;
+}
+
+export function cacheKeyForWiki(wiki: string, variant: MediaVariant): string {
+  return cacheKeyFor(wiki, variant);
+}
+
+// Legacy singleton shape for any remaining imports
+export const imagePipeline = {
+  getCached: () => null as string | null,
+  preloadAhead,
+  warmSession,
+  fetchWiki: async (wiki: string, variant: MediaVariant) =>
+    loadFirst(getPlayableUrls(wiki, variant)),
+  fetchDirect: async (url: string) => (await preloadUrl(url)) ? url : null,
+  preloadQuestion,
+};

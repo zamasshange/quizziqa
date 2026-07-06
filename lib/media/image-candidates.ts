@@ -3,7 +3,7 @@ import { fallbackImages } from "@/lib/media/fallback-images";
 import { getMediaProxyUrl } from "@/lib/media/media-url";
 import type { MediaVariant } from "@/lib/media/images";
 
-/** Target widths per media type — never fetch full originals in gameplay. */
+/** Target widths per media type. */
 export const VARIANT_WIDTH: Record<MediaVariant, number> = {
   portrait: 520,
   landscape: 720,
@@ -16,26 +16,21 @@ export const VARIANT_WIDTH: Record<MediaVariant, number> = {
   text: 400,
 };
 
-/** Convert upload.wikimedia.org URL to a sized thumbnail. */
 export function wikimediaThumbUrl(url: string, width: number): string {
   if (!url.includes("upload.wikimedia.org")) return url;
   if (url.includes("/thumb/")) {
     return url.replace(/\/(\d+)px-/, `/${width}px-`);
   }
-
   const match = url.match(
     /upload\.wikimedia\.org\/wikipedia\/(commons|en)\/(.+)$/
   );
   if (!match) return url;
-
   const [, project, path] = match;
   const filename = path.split("/").pop() ?? path;
   const isSvg = filename.toLowerCase().endsWith(".svg");
-
   if (isSvg) {
     return `https://upload.wikimedia.org/wikipedia/${project}/thumb/${path}/${width}px-${filename}.png`;
   }
-
   return `https://upload.wikimedia.org/wikipedia/${project}/thumb/${path}/${width}px-${filename}`;
 }
 
@@ -43,8 +38,11 @@ export function cacheKeyFor(wiki: string, variant: MediaVariant): string {
   return `${wiki}:${VARIANT_WIDTH[variant] ?? 520}`;
 }
 
-/** Ordered candidate URLs — primary → secondary → proxy → smaller proxy. */
-export function getImageCandidates(
+/**
+ * URLs for <img src> — direct CDN first (fast on desktop), proxy fallback (mobile-safe).
+ * img tags bypass CORS; never use fetch() for Wikimedia on the client.
+ */
+export function getPlayableUrls(
   wiki: string,
   variant: MediaVariant
 ): string[] {
@@ -59,7 +57,11 @@ export function getImageCandidates(
     urls.push(wikimediaThumbUrl(manifest, width));
     urls.push(wikimediaThumbUrl(manifest, small));
   }
-  if (fallback && fallback !== manifest && !fallback.includes("commons.wikimedia.org")) {
+  if (
+    fallback &&
+    fallback !== manifest &&
+    !fallback.includes("commons.wikimedia.org")
+  ) {
     urls.push(wikimediaThumbUrl(fallback, width));
   }
 
@@ -69,13 +71,28 @@ export function getImageCandidates(
   return [...new Set(urls)];
 }
 
-export function getDirectCandidates(imageUrl: string, variant: MediaVariant): string[] {
-  const width = VARIANT_WIDTH[variant] ?? 520;
+export function getFlagUrl(imageUrl: string): string[] {
+  return [imageUrl];
+}
+
+/** @deprecated use getPlayableUrls */
+export function getImageCandidates(
+  wiki: string,
+  variant: MediaVariant
+): string[] {
+  return getPlayableUrls(wiki, variant);
+}
+
+export function getDirectCandidates(
+  imageUrl: string,
+  variant: MediaVariant
+): string[] {
   if (imageUrl.includes("flagcdn.com")) return [imageUrl];
   if (imageUrl.includes("upload.wikimedia.org")) {
+    const w = VARIANT_WIDTH[variant] ?? 520;
     return [
-      wikimediaThumbUrl(imageUrl, width),
-      wikimediaThumbUrl(imageUrl, Math.round(width * 0.55)),
+      wikimediaThumbUrl(imageUrl, w),
+      wikimediaThumbUrl(imageUrl, Math.round(w * 0.55)),
       imageUrl,
     ];
   }

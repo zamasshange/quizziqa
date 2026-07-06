@@ -1,8 +1,17 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { MediaVariant } from "@/lib/media/images";
-import { useQuestionImage } from "@/hooks/use-question-image";
+import {
+  getFlagUrl,
+  getPlayableUrls,
+} from "@/lib/media/image-candidates";
+import {
+  firstReady,
+  loadFirst,
+  preloadUrl,
+} from "@/lib/media/image-pipeline";
 
 interface QuestionMediaProps {
   image?: string;
@@ -21,18 +30,14 @@ function MediaSkeleton() {
   return (
     <div className="absolute inset-0 overflow-hidden rounded-xl bg-gradient-to-br from-black/[0.04] to-black/[0.08]">
       <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-        <div className="w-12 h-12 rounded-full bg-black/[0.06] animate-pulse" />
-        <div className="h-2 w-16 rounded-full bg-black/[0.06] animate-pulse" />
-      </div>
     </div>
   );
 }
 
 function CategoryPlaceholder({ emoji }: { emoji: string }) {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-secondary to-white border border-black/[0.06]">
-      <span className="text-5xl md:text-6xl opacity-70">{emoji}</span>
+    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-secondary to-white">
+      <span className="text-5xl md:text-6xl opacity-80">{emoji}</span>
     </div>
   );
 }
@@ -41,35 +46,86 @@ function MediaImage({
   wikiKey,
   imageUrl,
   variant,
-  categoryEmoji,
+  categoryEmoji = "🎯",
 }: {
   wikiKey?: string;
   imageUrl?: string;
   variant: MediaVariant;
   categoryEmoji?: string;
 }) {
-  const { src, state } = useQuestionImage({ wikiKey, imageUrl, variant });
-  const showImage = state === "ready" && src;
+  const urls = useMemo(() => {
+    if (imageUrl?.includes("flagcdn.com")) return getFlagUrl(imageUrl);
+    if (wikiKey) return getPlayableUrls(wikiKey, variant);
+    if (imageUrl?.startsWith("http")) return [imageUrl];
+    return [];
+  }, [wikiKey, imageUrl, variant]);
+
+  const [urlIndex, setUrlIndex] = useState(0);
+  const [imgReady, setImgReady] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+
+  const currentUrl = urls[urlIndex] ?? null;
+
+  useEffect(() => {
+    setUrlIndex(0);
+    setImgReady(false);
+    setExhausted(false);
+
+    const hit = firstReady(urls);
+    if (hit) {
+      const idx = urls.indexOf(hit);
+      if (idx >= 0) setUrlIndex(idx);
+    } else if (urls.length) {
+      void loadFirst(urls);
+    }
+  }, [urls]);
+
+  useEffect(() => {
+    if (!currentUrl || imgReady) return;
+    const timer = setTimeout(() => {
+      if (urlIndex + 1 < urls.length) {
+        setUrlIndex((i) => i + 1);
+      } else {
+        setExhausted(true);
+      }
+    }, 6000);
+    void preloadUrl(currentUrl);
+    return () => clearTimeout(timer);
+  }, [currentUrl, urlIndex, urls.length, imgReady]);
+
+  const handleError = () => {
+    setImgReady(false);
+    if (urlIndex + 1 < urls.length) {
+      setUrlIndex((i) => i + 1);
+    } else {
+      setExhausted(true);
+    }
+  };
+
+  const showPlaceholder = exhausted && !imgReady;
+  const showSkeleton = !imgReady && !showPlaceholder;
 
   return (
     <div className="relative w-full h-full min-h-[160px] flex items-center justify-center">
-      {(state === "loading" || (state === "ready" && !showImage)) && <MediaSkeleton />}
+      {showSkeleton && <MediaSkeleton />}
+      {showPlaceholder && <CategoryPlaceholder emoji={categoryEmoji} />}
 
-      {state === "placeholder" && categoryEmoji && (
-        <CategoryPlaceholder emoji={categoryEmoji} />
-      )}
-
-      {showImage && (
+      {currentUrl && !showPlaceholder && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
-          src={src}
+          key={currentUrl}
+          src={currentUrl}
           alt=""
           role="presentation"
           className={cn(
-            "relative z-10 block w-full h-full min-w-0 min-h-0 object-contain",
-            "animate-[fadeIn_0.35s_ease-out]"
+            "relative z-10 block w-full h-full min-w-0 min-h-0 object-contain transition-opacity duration-300",
+            imgReady ? "opacity-100" : "opacity-0"
           )}
           decoding="async"
+          loading="eager"
+          fetchPriority="high"
+          onLoad={() => setImgReady(true)}
+          onError={handleError}
         />
       )}
     </div>

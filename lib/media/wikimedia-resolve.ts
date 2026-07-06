@@ -9,7 +9,7 @@ import { wikimediaThumbUrl } from "@/lib/media/image-candidates";
 const UA =
   "GuessEverythingQuiz/1.0 (https://quizziqa.vercel.app; educational quiz app)";
 
-const FETCH_TIMEOUT_MS = 4000;
+const FETCH_TIMEOUT_MS = 3000;
 
 function isBadRedirect(url: string): boolean {
   return (
