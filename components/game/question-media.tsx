@@ -55,7 +55,7 @@ function MediaImage({
 }) {
   const urls = useMemo(() => {
     if (imageUrl?.includes("flagcdn.com")) return getFlagUrl(imageUrl);
-    if (wikiKey) return getPlayableUrls(wikiKey, variant);
+    if (wikiKey) return getPlayableUrls(wikiKey, variant, imageUrl);
     if (imageUrl?.startsWith("http")) return [imageUrl];
     return [];
   }, [wikiKey, imageUrl, variant]);
@@ -88,7 +88,7 @@ function MediaImage({
       } else {
         setExhausted(true);
       }
-    }, 6000);
+    }, 4000);
     void preloadUrl(currentUrl);
     return () => clearTimeout(timer);
   }, [currentUrl, urlIndex, urls.length, imgReady]);
@@ -103,14 +103,14 @@ function MediaImage({
   };
 
   const showPlaceholder = exhausted && !imgReady;
-  const showSkeleton = !imgReady && !showPlaceholder;
+  const showSkeleton = !imgReady && !showPlaceholder && !!currentUrl;
 
   return (
     <div className="relative w-full h-full min-h-[160px] flex items-center justify-center">
       {showSkeleton && <MediaSkeleton />}
       {showPlaceholder && <CategoryPlaceholder emoji={categoryEmoji} />}
 
-      {currentUrl && !showPlaceholder && (
+      {currentUrl && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
           key={currentUrl}

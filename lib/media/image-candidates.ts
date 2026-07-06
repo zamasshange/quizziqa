@@ -3,7 +3,6 @@ import { fallbackImages } from "@/lib/media/fallback-images";
 import { getMediaProxyUrl } from "@/lib/media/media-url";
 import type { MediaVariant } from "@/lib/media/images";
 
-/** Target widths per media type. */
 export const VARIANT_WIDTH: Record<MediaVariant, number> = {
   portrait: 520,
   landscape: 720,
@@ -16,57 +15,51 @@ export const VARIANT_WIDTH: Record<MediaVariant, number> = {
   text: 400,
 };
 
-export function wikimediaThumbUrl(url: string, width: number): string {
-  if (!url.includes("upload.wikimedia.org")) return url;
-  if (url.includes("/thumb/")) {
-    return url.replace(/\/(\d+)px-/, `/${width}px-`);
-  }
-  const match = url.match(
-    /upload\.wikimedia\.org\/wikipedia\/(commons|en)\/(.+)$/
-  );
-  if (!match) return url;
-  const [, project, path] = match;
-  const filename = path.split("/").pop() ?? path;
-  const isSvg = filename.toLowerCase().endsWith(".svg");
-  if (isSvg) {
-    return `https://upload.wikimedia.org/wikipedia/${project}/thumb/${path}/${width}px-${filename}.png`;
-  }
-  return `https://upload.wikimedia.org/wikipedia/${project}/thumb/${path}/${width}px-${filename}`;
-}
-
 export function cacheKeyFor(wiki: string, variant: MediaVariant): string {
   return `${wiki}:${VARIANT_WIDTH[variant] ?? 520}`;
 }
 
+function isGoodUrl(url: string): boolean {
+  return (
+    url.startsWith("https://upload.wikimedia.org/") &&
+    !url.includes("commons.wikimedia.org")
+  );
+}
+
+/** Original verified URLs from manifest — never auto-generated thumbs (they 400). */
+export function getOriginalUrls(wiki: string): string[] {
+  const urls: string[] = [];
+  const manifest = getManifestImage(wiki);
+  const fallback = fallbackImages[wiki];
+  if (manifest && isGoodUrl(manifest)) urls.push(manifest);
+  if (fallback && isGoodUrl(fallback) && fallback !== manifest) {
+    urls.push(fallback);
+  }
+  return urls;
+}
+
 /**
- * URLs for <img src> — direct CDN first (fast on desktop), proxy fallback (mobile-safe).
- * img tags bypass CORS; never use fetch() for Wikimedia on the client.
+ * URLs for <img src> — verified originals first, proxy last.
+ * Original Wikimedia URLs return 200; our thumb URLs return 400.
  */
 export function getPlayableUrls(
   wiki: string,
-  variant: MediaVariant
+  variant: MediaVariant,
+  bakedImage?: string
 ): string[] {
   const width = VARIANT_WIDTH[variant] ?? 520;
-  const small = Math.max(200, Math.round(width * 0.55));
   const urls: string[] = [];
 
-  const manifest = getManifestImage(wiki);
-  const fallback = fallbackImages[wiki];
-
-  if (manifest && !manifest.includes("commons.wikimedia.org")) {
-    urls.push(wikimediaThumbUrl(manifest, width));
-    urls.push(wikimediaThumbUrl(manifest, small));
-  }
   if (
-    fallback &&
-    fallback !== manifest &&
-    !fallback.includes("commons.wikimedia.org")
+    bakedImage?.startsWith("http") &&
+    !bakedImage.includes("/api/media") &&
+    !bakedImage.includes("commons.wikimedia.org")
   ) {
-    urls.push(wikimediaThumbUrl(fallback, width));
+    urls.push(bakedImage);
   }
 
+  urls.push(...getOriginalUrls(wiki));
   urls.push(getMediaProxyUrl(wiki, width));
-  urls.push(getMediaProxyUrl(wiki, small));
 
   return [...new Set(urls)];
 }
@@ -75,7 +68,7 @@ export function getFlagUrl(imageUrl: string): string[] {
   return [imageUrl];
 }
 
-/** @deprecated use getPlayableUrls */
+/** @deprecated */
 export function getImageCandidates(
   wiki: string,
   variant: MediaVariant
@@ -83,18 +76,13 @@ export function getImageCandidates(
   return getPlayableUrls(wiki, variant);
 }
 
-export function getDirectCandidates(
-  imageUrl: string,
-  variant: MediaVariant
-): string[] {
+export function getDirectCandidates(imageUrl: string): string[] {
   if (imageUrl.includes("flagcdn.com")) return [imageUrl];
-  if (imageUrl.includes("upload.wikimedia.org")) {
-    const w = VARIANT_WIDTH[variant] ?? 520;
-    return [
-      wikimediaThumbUrl(imageUrl, w),
-      wikimediaThumbUrl(imageUrl, Math.round(w * 0.55)),
-      imageUrl,
-    ];
-  }
-  return [imageUrl];
+  if (imageUrl.startsWith("http")) return [imageUrl];
+  return [];
+}
+
+// Keep for any legacy imports — do NOT use for primary loading
+export function wikimediaThumbUrl(url: string, _width: number): string {
+  return url;
 }

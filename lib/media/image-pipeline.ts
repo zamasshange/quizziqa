@@ -99,7 +99,7 @@ export function urlsForQuestion(
   if (q.emoji && !q.image) return [];
   if (q.image?.includes("flagcdn.com")) return getFlagUrl(q.image);
   const wiki = wikiFromQuestionId(q.id);
-  if (wiki) return getPlayableUrls(wiki, variant);
+  if (wiki) return getPlayableUrls(wiki, variant, q.image);
   if (q.image?.startsWith("http")) return [q.image];
   return [];
 }
