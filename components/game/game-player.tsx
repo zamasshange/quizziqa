@@ -14,7 +14,10 @@ import {
   getAnswerPool,
   recordSessionQuestions,
 } from "@/lib/game/question-engine";
-import { preloadSessionImages } from "@/lib/game/preload-session";
+import {
+  warmSessionImages,
+  preloadQuestions,
+} from "@/hooks/use-question-image";
 import { ensureQuestionImages, wikiFromQuestionId } from "@/lib/media/resolve-image";
 import { DEFAULT_SETTINGS } from "@/lib/game/settings";
 import { audioManager } from "@/lib/audio/audio-manager";
@@ -100,10 +103,23 @@ export function GamePlayer({
     getAnswerPool(ensureQuestionImages(initialGame.questions))
   );
 
+  const variantForQuestion = useCallback(
+    (q: GameQuestion) =>
+      inferMediaVariant(initialGame.slug, initialGame.mode, {
+        hasImage: !!q.image,
+        hasEmoji: !!q.emoji,
+      }),
+    [initialGame.slug, initialGame.mode]
+  );
+
+  // Image pipeline — warm entire session on entry, keep 6-question rolling buffer
   useEffect(() => {
-    preloadSessionImages(sessionQuestions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- warm cache once on mount
-  }, []);
+    warmSessionImages(sessionQuestions, variantForQuestion);
+  }, [sessionQuestions, variantForQuestion]);
+
+  useEffect(() => {
+    preloadQuestions(sessionQuestions, currentIndex, variantForQuestion, 6);
+  }, [currentIndex, sessionQuestions, variantForQuestion]);
 
   // Touchpad / wheel scroll when body is locked (play-mode)
   useEffect(() => {
@@ -167,7 +183,7 @@ export function GamePlayer({
 
         setSessionQuestions(session);
         setCurrentIndex(0);
-        preloadSessionImages(session);
+        warmSessionImages(session, variantForQuestion);
       } catch {
         /* keep SSR session */
       }
@@ -176,7 +192,7 @@ export function GamePlayer({
     return () => {
       cancelled = true;
     };
-  }, [initialGame.slug, settings.questionCount, settingsHydrated]);
+  }, [initialGame.slug, settings.questionCount, settingsHydrated, variantForQuestion]);
 
   useEffect(() => {
     if (settingsHydrated && timerLimit) setTimeLeft(timerLimit);
@@ -187,15 +203,6 @@ export function GamePlayer({
     resetRound(question);
     setRoundState("playing");
   }, [currentIndex, question?.id, resetRound]);
-
-  // Preload next question images immediately
-  useEffect(() => {
-    if (!question) return;
-    preloadSessionImages([question]);
-    preloadSessionImages(
-      sessionQuestions.slice(currentIndex + 1, currentIndex + 4)
-    );
-  }, [question, currentIndex, sessionQuestions]);
 
   const enrichFact = useCallback(async (baseFact: string, answer: string) => {
     setDisplayFact(baseFact);
@@ -326,8 +333,8 @@ export function GamePlayer({
     setFirstQuestion(true);
     recordedRef.current = false;
     if (session[0]) resetRound(session[0]);
-    preloadSessionImages(session);
-  }, [pool, initialGame.slug, settings.questionCount, resetRound]);
+    warmSessionImages(session, variantForQuestion);
+  }, [pool, initialGame.slug, settings.questionCount, resetRound, variantForQuestion]);
 
   useEffect(() => {
     if (roundState !== "finished" || recordedRef.current) return;
@@ -492,6 +499,7 @@ export function GamePlayer({
                       text={question.question}
                       alt=""
                       variant={mediaVariant}
+                      categoryEmoji={categoryEmoji}
                       className="h-full"
                     />
 

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { getMediaProxyUrl } from "@/lib/media/media-url";
 import type { MediaVariant } from "@/lib/media/images";
+import { useQuestionImage } from "@/hooks/use-question-image";
 
 interface QuestionMediaProps {
   image?: string;
@@ -15,130 +14,68 @@ interface QuestionMediaProps {
   wikiKey?: string;
   compact?: boolean;
   frameless?: boolean;
+  categoryEmoji?: string;
 }
 
-const LOAD_TIMEOUT_MS = 8000;
-
-/** Fetch image with hard timeout — img tags can hang forever without onError. */
-async function fetchImageBlob(url: string): Promise<string | null> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      credentials: "same-origin",
-      cache: "force-cache",
-    });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    if (!blob.size || !blob.type.startsWith("image/")) return null;
-    return URL.createObjectURL(blob);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function MediaImage({ wikiKey, fallbackSrc }: { wikiKey?: string; fallbackSrc?: string }) {
-  const directSrc =
-    fallbackSrc?.startsWith("https://") || fallbackSrc?.startsWith("http://")
-      ? fallbackSrc
-      : undefined;
-  const proxySrc = wikiKey ? getMediaProxyUrl(wikiKey) : undefined;
-
-  const [blobSrc, setBlobSrc] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const blobRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const revoke = () => {
-      if (blobRef.current) {
-        URL.revokeObjectURL(blobRef.current);
-        blobRef.current = null;
-      }
-    };
-
-    revoke();
-    setBlobSrc(null);
-    setFailed(false);
-    setLoading(true);
-
-    // Same-origin proxy first (reliable on Vercel + mobile), then direct CDN
-    const candidates = [proxySrc, directSrc].filter(
-      (u, i, arr): u is string => !!u && arr.indexOf(u) === i
-    );
-
-    if (candidates.length === 0) {
-      setFailed(true);
-      setLoading(false);
-      return;
-    }
-
-    (async () => {
-      for (const url of candidates) {
-        if (cancelled) return;
-        const blob = await fetchImageBlob(url);
-        if (cancelled) {
-          if (blob) URL.revokeObjectURL(blob);
-          return;
-        }
-        if (blob) {
-          blobRef.current = blob;
-          setBlobSrc(blob);
-          setLoading(false);
-          return;
-        }
-      }
-      if (!cancelled) {
-        setFailed(true);
-        setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      revoke();
-    };
-  }, [wikiKey, fallbackSrc, proxySrc, directSrc]);
-
-  if (failed || !blobSrc) {
-    if (loading) {
-      return (
-        <div className="relative w-full h-full flex items-center justify-center min-h-[120px]">
-          <div className="flex flex-col items-center justify-center gap-2 animate-pulse">
-            <span className="text-2xl opacity-40">📷</span>
-            <span className="text-[10px] font-bold text-black/30">Loading…</span>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div className="flex flex-col items-center justify-center w-full h-full min-h-[100px] text-black/35 py-6">
-        <span className="text-2xl">📷</span>
-        <span className="text-[10px] font-bold mt-1">Image unavailable</span>
-      </div>
-    );
-  }
-
+function MediaSkeleton() {
   return (
-    <div className="relative w-full h-full min-h-[160px] flex items-center justify-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={blobSrc}
-        alt=""
-        role="presentation"
-        className="block w-full h-full min-w-0 min-h-0 object-contain"
-        decoding="async"
-      />
+    <div className="absolute inset-0 overflow-hidden rounded-xl bg-gradient-to-br from-black/[0.04] to-black/[0.08]">
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+        <div className="w-12 h-12 rounded-full bg-black/[0.06] animate-pulse" />
+        <div className="h-2 w-16 rounded-full bg-black/[0.06] animate-pulse" />
+      </div>
     </div>
   );
 }
 
-/** Only product (phone/car) uses compact on mobile — everything else keeps full size */
+function CategoryPlaceholder({ emoji }: { emoji: string }) {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-secondary to-white border border-black/[0.06]">
+      <span className="text-5xl md:text-6xl opacity-70">{emoji}</span>
+    </div>
+  );
+}
+
+function MediaImage({
+  wikiKey,
+  imageUrl,
+  variant,
+  categoryEmoji,
+}: {
+  wikiKey?: string;
+  imageUrl?: string;
+  variant: MediaVariant;
+  categoryEmoji?: string;
+}) {
+  const { src, state } = useQuestionImage({ wikiKey, imageUrl, variant });
+  const showImage = state === "ready" && src;
+
+  return (
+    <div className="relative w-full h-full min-h-[160px] flex items-center justify-center">
+      {(state === "loading" || (state === "ready" && !showImage)) && <MediaSkeleton />}
+
+      {state === "placeholder" && categoryEmoji && (
+        <CategoryPlaceholder emoji={categoryEmoji} />
+      )}
+
+      {showImage && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={src}
+          alt=""
+          role="presentation"
+          className={cn(
+            "relative z-10 block w-full h-full min-w-0 min-h-0 object-contain",
+            "animate-[fadeIn_0.35s_ease-out]"
+          )}
+          decoding="async"
+        />
+      )}
+    </div>
+  );
+}
+
 const FRAME: Record<MediaVariant, { normal: string; compact: string }> = {
   flag: {
     normal: "w-[240px] sm:w-[300px] lg:w-[380px] xl:w-[440px] h-[150px] sm:h-[188px] lg:h-[240px] xl:h-[280px]",
@@ -181,6 +118,7 @@ export function QuestionMedia({
   wikiKey,
   compact = false,
   frameless = false,
+  categoryEmoji = "🎯",
 }: QuestionMediaProps) {
   if (variant === "text" && text) {
     const quoteMatch = text.match(/^("[^"]+"|'[^']+')/);
@@ -224,8 +162,7 @@ export function QuestionMedia({
           className
         )}
       >
-        <span className="text-3xl">📷</span>
-        <span className="text-xs font-bold">No image</span>
+        <span className="text-3xl">{categoryEmoji}</span>
       </div>
     );
   }
@@ -244,7 +181,12 @@ export function QuestionMedia({
             : cn("mx-auto rounded-xl", sizeClass)
         )}
       >
-        <MediaImage wikiKey={wikiKey} fallbackSrc={image} />
+        <MediaImage
+          wikiKey={wikiKey}
+          imageUrl={image}
+          variant={variant}
+          categoryEmoji={categoryEmoji}
+        />
       </div>
     </div>
   );

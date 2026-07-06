@@ -4,11 +4,12 @@
  */
 import { getManifestImage } from "@/lib/media/image-manifest";
 import { fallbackImages } from "@/lib/media/fallback-images";
+import { wikimediaThumbUrl } from "@/lib/media/image-candidates";
 
 const UA =
   "GuessEverythingQuiz/1.0 (https://quizziqa.vercel.app; educational quiz app)";
 
-const FETCH_TIMEOUT_MS = 8000;
+const FETCH_TIMEOUT_MS = 4000;
 
 function isBadRedirect(url: string): boolean {
   return (
@@ -24,10 +25,10 @@ function isFetchableImageUrl(url: string): boolean {
   );
 }
 
-export function getStaticImageUrl(wiki: string): string | undefined {
+export function getStaticImageUrl(wiki: string, width?: number): string | undefined {
   for (const candidate of [getManifestImage(wiki), fallbackImages[wiki]]) {
     if (candidate && isFetchableImageUrl(candidate) && !isBadRedirect(candidate)) {
-      return candidate;
+      return width ? wikimediaThumbUrl(candidate, width) : candidate;
     }
   }
   return undefined;
@@ -145,13 +146,18 @@ export async function fetchImageBytes(
 
 /** Resolve wiki → image bytes for /api/media (fast static first, REST fallback). */
 export async function resolveWikiImageBytes(
-  wiki: string
+  wiki: string,
+  width = 640
 ): Promise<{ buffer: ArrayBuffer; contentType: string } | null> {
   const tried = new Set<string>();
 
-  for (const url of [getStaticImageUrl(wiki), fallbackImages[wiki]].filter(
-    Boolean
-  ) as string[]) {
+  for (const url of [
+    getStaticImageUrl(wiki, width),
+    getStaticImageUrl(wiki, Math.round(width * 0.55)),
+    fallbackImages[wiki]
+      ? wikimediaThumbUrl(fallbackImages[wiki], width)
+      : undefined,
+  ].filter(Boolean) as string[]) {
     if (tried.has(url) || isBadRedirect(url)) continue;
     tried.add(url);
     const hit = await fetchImageBytes(url);
@@ -160,7 +166,8 @@ export async function resolveWikiImageBytes(
 
   const restUrl = await fetchRestImage(wiki);
   if (restUrl && !tried.has(restUrl)) {
-    const hit = await fetchImageBytes(restUrl);
+    const sized = wikimediaThumbUrl(restUrl, width);
+    const hit = await fetchImageBytes(sized);
     if (hit) return hit;
   }
 

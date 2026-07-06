@@ -8,8 +8,14 @@ export async function GET(req: NextRequest) {
     return new Response("Missing wiki parameter", { status: 400 });
   }
 
+  const width = Math.min(
+    1200,
+    Math.max(200, parseInt(req.nextUrl.searchParams.get("w") ?? "640", 10) || 640)
+  );
+  const cacheKey = `${wiki}:${width}`;
+
   try {
-    const cached = getCachedImage(wiki);
+    const cached = getCachedImage(cacheKey);
     if (cached) {
       return new Response(cached.buffer, {
         headers: {
@@ -21,13 +27,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const result = await resolveWikiImageBytes(wiki);
+    const result = await resolveWikiImageBytes(wiki, width);
 
     if (!result) {
       return new Response("Image not found", { status: 404 });
     }
 
-    setCachedImage(wiki, result.buffer, result.contentType);
+    setCachedImage(cacheKey, result.buffer, result.contentType);
 
     return new Response(result.buffer, {
       headers: {
