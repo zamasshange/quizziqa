@@ -3,7 +3,8 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 function getConfig() {
   const apiKey = process.env.OPENROUTER_API_KEY?.trim();
   const model = process.env.OPENROUTER_MODEL?.trim() || "google/gemini-2.5-flash";
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://quizzical.site";
   return { apiKey, model, appUrl };
 }
 
@@ -25,7 +26,7 @@ async function callOpenRouter(
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": appUrl,
-      "X-Title": "Guess Everything",
+      "X-Title": "Quizzical",
     },
     body: JSON.stringify({
       model,

@@ -4,6 +4,7 @@ import type { EntityEntry } from "@/lib/data/entities";
 import { fetchFlagImages } from "@/lib/wikipedia/client";
 import { getFlagUrl } from "@/lib/media/images";
 import { resolveEntityImage } from "@/lib/media/resolve-image";
+import { fetchTmdbPostersForEntities } from "@/lib/media/tmdb";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -58,6 +59,12 @@ async function buildQuestionsFromEntities(
       )
     : new Map<string, string>();
 
+  const isMovieGame =
+    template.categoryId === "movies" || template.slug.includes("movie");
+  const tmdbPosters = isMovieGame
+    ? await fetchTmdbPostersForEntities(entities)
+    : new Map<string, string>();
+
   const allAnswers = entities.map(
     (e) => e.answer ?? e.wiki.replace(/_/g, " ")
   );
@@ -70,9 +77,12 @@ async function buildQuestionsFromEntities(
     const flagUrl = template.useFlags
       ? flagImages.get(entity.wiki) ?? getFlagUrl(answer)
       : "";
-    const image = resolveEntityImage(entity.wiki, answer, {
-      flagUrl: flagUrl || undefined,
-    });
+    const tmdb = tmdbPosters.get(entity.wiki);
+    const image =
+      tmdb ||
+      resolveEntityImage(entity.wiki, answer, {
+        flagUrl: flagUrl || undefined,
+      });
 
     if (!image && template.mode === "guess-from-image") continue;
 

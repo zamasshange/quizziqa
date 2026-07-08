@@ -488,7 +488,7 @@ export function GamePlayer({
               />
 
               <div className="play-game-card play-game-card--fill flex-1 min-w-0 min-h-0 flex flex-col md:flex-row items-stretch gap-1.5 md:gap-8 lg:gap-12 p-2 md:p-8 lg:p-10">
-                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:min-h-0 md:max-w-[50%] max-h-[28vh] md:max-h-none">
+                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:min-h-0 md:max-w-[50%] max-h-[38vh] md:max-h-none">
                     <QuestionMedia
                       key={question.id}
                       frameless

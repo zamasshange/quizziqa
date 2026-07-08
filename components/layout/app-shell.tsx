@@ -1,6 +1,6 @@
 import { QuizNav, QuizCategoryNav, QuizMobileCategoryNav } from "@/components/layout/quiz-nav";
 import Link from "next/link";
-import { QuizButtonLink } from "@/components/ui/quiz-button";
+import { AuthControls } from "@/components/auth/auth-controls";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -55,14 +55,7 @@ export function AppShell({
                       Collections
                     </Link>
                   </div>
-                  <QuizButtonLink
-                    href="/profile"
-                    color="lime"
-                    textColor="black"
-                    className="!min-w-0 !h-9 !px-4 !text-xs shrink-0"
-                  >
-                    Sign in
-                  </QuizButtonLink>
+                  <AuthControls />
                 </div>
               )}
 

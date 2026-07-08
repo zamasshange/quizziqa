@@ -55,7 +55,12 @@ export function getPlayableUrls(
     !bakedImage.includes("/api/media") &&
     !bakedImage.includes("commons.wikimedia.org")
   ) {
-    urls.push(bakedImage);
+    // Prefer TMDB / trusted CDN baked URLs first
+    if (bakedImage.includes("image.tmdb.org") || bakedImage.includes("flagcdn.com")) {
+      urls.unshift(bakedImage);
+    } else {
+      urls.push(bakedImage);
+    }
   }
 
   urls.push(...getOriginalUrls(wiki));

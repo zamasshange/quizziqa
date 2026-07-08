@@ -7,7 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const UA = "GuessEverythingQuiz/1.0 (https://quizziqa.vercel.app; educational quiz)";
+const UA = "Quizzical/1.0 (https://quizzical.site; educational quiz)";
 
 /** Curated Commons filenames when the Wikipedia page image is wrong or missing. */
 const FILE_OVERRIDES = {

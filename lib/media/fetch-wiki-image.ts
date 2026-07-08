@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 
 const UA =
-  "GuessEverythingQuiz/1.0 (https://quizziqa.vercel.app; educational quiz app)";
+  "Quizzical/1.0 (https://quizzical.site; educational quiz app)";
 
 async function fetchRestImage(wikiTitle: string): Promise<string | null> {
   const title = encodeURIComponent(wikiTitle.replace(/_/g, " "));

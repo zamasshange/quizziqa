@@ -6,7 +6,7 @@ import { fallbackImages } from "@/lib/media/fallback-images";
 import { getOriginalUrls } from "@/lib/media/image-candidates";
 
 const UA =
-  "GuessEverythingQuiz/1.0 (https://quizziqa.vercel.app; educational quiz app)";
+  "Quizzical/1.0 (https://quizzical.site; educational quiz app)";
 
 const FETCH_TIMEOUT_MS = 5000;
 

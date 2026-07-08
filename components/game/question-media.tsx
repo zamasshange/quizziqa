@@ -158,8 +158,8 @@ const FRAME: Record<MediaVariant, { normal: string; compact: string }> = {
     compact: "w-[110px] h-[110px]",
   },
   portrait: {
-    normal: "w-[120px] sm:w-[200px] md:w-[280px] lg:w-[360px] xl:w-[420px] h-[150px] sm:h-[250px] md:h-[360px] lg:h-[460px] xl:h-[540px]",
-    compact: "w-[110px] h-[140px]",
+    normal: "w-[150px] sm:w-[220px] md:w-[280px] lg:w-[360px] xl:w-[420px] h-[190px] sm:h-[270px] md:h-[360px] lg:h-[460px] xl:h-[540px]",
+    compact: "w-[130px] h-[165px]",
   },
   emoji: { normal: "", compact: "" },
   text: { normal: "", compact: "" },
@@ -233,7 +233,7 @@ export function QuestionMedia({
         className={cn(
           "relative flex items-center justify-center overflow-hidden",
           frameless
-            ? "w-full h-full min-h-0 max-h-[28vh] md:max-h-none md:min-h-[320px] lg:min-h-[380px]"
+            ? "w-full h-full min-h-0 max-h-[38vh] md:max-h-none md:min-h-[320px] lg:min-h-[380px]"
             : cn("mx-auto rounded-xl", sizeClass)
         )}
       >
