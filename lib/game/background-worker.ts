@@ -1,11 +1,11 @@
 /**
- * Background asset scheduler — homepage preload, predictive hover, idle refill.
+ * Background asset scheduler — light homepage preload, predictive hover.
  */
 import type { GameQuestion } from "@/lib/types";
 import type { MediaVariant } from "@/lib/media/images";
 import { inferMediaVariant } from "@/lib/media/images";
 import { ensureQuestionImages } from "@/lib/media/resolve-image";
-import { warmSession, prepareAhead } from "@/lib/media/asset-manager";
+import { prepareAhead } from "@/lib/media/asset-manager";
 import { idbGetQuestions, idbPutQuestions } from "@/lib/cache/idb-store";
 import {
   POPULAR_GAME_SLUGS,
@@ -43,31 +43,23 @@ function variantForSlug(slug: string) {
 
 function scheduleIdle(fn: () => void): void {
   if (typeof requestIdleCallback !== "undefined") {
-    requestIdleCallback(() => fn(), { timeout: 4000 });
+    requestIdleCallback(() => fn(), { timeout: 8000 });
   } else {
-    setTimeout(fn, 100);
+    setTimeout(fn, 500);
   }
 }
 
-async function preloadCategory(slug: string, priority: "high" | "low"): Promise<void> {
+async function preloadCategory(slug: string): Promise<void> {
   const questions = await fetchAndCachePool(slug);
   if (!questions.length) return;
 
   const slice = questions.slice(0, CATEGORY_PRELOAD_COUNT);
-  const variantFn = variantForSlug(slug);
-
-  if (priority === "high") {
-    warmSession(slice, variantFn);
-  } else {
-    scheduleIdle(() => {
-      prepareAhead(slice, 0, variantFn, CATEGORY_PRELOAD_COUNT);
-    });
-  }
+  prepareAhead(slice, 0, variantForSlug(slug), CATEGORY_PRELOAD_COUNT);
 }
 
 export function prioritizeCategory(slug: string): void {
   if (categoryQueues.has(slug)) return;
-  const job = preloadCategory(slug, "high").finally(() => {
+  const job = preloadCategory(slug).finally(() => {
     categoryQueues.delete(slug);
   });
   categoryQueues.set(slug, job);
@@ -79,9 +71,7 @@ export function startHomepagePreload(): void {
 
   scheduleIdle(() => {
     POPULAR_GAME_SLUGS.forEach((slug, i) => {
-      setTimeout(() => {
-        void preloadCategory(slug, i < 3 ? "high" : "low");
-      }, i * 400);
+      setTimeout(() => void preloadCategory(slug), i * 2000);
     });
   });
 }

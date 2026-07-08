@@ -46,9 +46,9 @@ export function PlayAnswerGrid({
             onClick={() => onSelect(option)}
             whileHover={!disabled ? { y: -2, scale: 1.01 } : undefined}
             whileTap={!disabled ? { scale: 0.97 } : undefined}
-            initial={animateEntry ? { opacity: 0, y: 8 } : false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={animateEntry ? { delay: i * 0.03, duration: 0.15 } : { duration: 0 }}
+          initial={animateEntry ? { opacity: 0, y: 8 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={animateEntry ? { delay: i * 0.03, duration: 0.15 } : undefined}
             className={cn(
               "play-answer-btn touch-target",
               stateClass,

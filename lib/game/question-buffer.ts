@@ -66,24 +66,22 @@ export class QuestionBuffer {
   }
 
   private prepareRange(start: number, count: number): void {
-    const slice = this.session.slice(start, start + count);
-    for (const q of slice) {
-      if (this.prepState.get(q.id) === "ready") continue;
-      this.markState(q.id, "downloading");
-    }
     prepareAhead(this.session, start, this.variantFor, count);
-    for (const q of slice) {
-      this.markState(q.id, "ready");
-    }
-    this.emit();
   }
+
+  private syncAnswerPool(): void {
+    this._answerPool = getAnswerPool(this.pool);
+  }
+
+  private _answerPool: string[] = [];
 
   init(ssrQuestions: GameQuestion[]): void {
     const pool = ensureQuestionImages(ssrQuestions);
     this.pool = pool;
+    this.syncAnswerPool();
     this.session = buildSessionQueue(pool, this.slug, this.sessionCount);
     this.currentIndex = 0;
-    for (const q of this.session) this.markState(q.id, "pending");
+    for (const q of this.session) this.markState(q.id, "ready");
     this.emit();
   }
 
@@ -99,22 +97,29 @@ export class QuestionBuffer {
     this.poolLoading = true;
 
     try {
+      let source: GameQuestion[] | null = null;
+
       const cached = await idbGetQuestions<GameQuestion[]>(poolCacheKey(this.slug));
       if (cached?.length) {
-        this.mergePool(cached);
+        source = cached;
       }
 
       const res = await fetch(
         `/api/games/${this.slug}/session?count=${this.sessionCount + POOL_FETCH_MARGIN}`
       );
-      if (!res.ok) return;
-      const data = await res.json();
-      const source = ensureQuestionImages(data.questions ?? []);
-      if (source.length === 0) return;
+      if (res.ok) {
+        const data = await res.json();
+        const fetched = ensureQuestionImages(data.questions ?? []);
+        if (fetched.length) {
+          source = fetched;
+          await idbPutQuestions(poolCacheKey(this.slug), fetched);
+        }
+      }
 
-      await idbPutQuestions(poolCacheKey(this.slug), source);
-      this.mergePool(source);
-      this.poolLoaded = true;
+      if (source?.length) {
+        this.mergePool(source);
+        this.poolLoaded = true;
+      }
     } catch {
       /* keep SSR pool */
     } finally {
@@ -124,12 +129,15 @@ export class QuestionBuffer {
 
   /** Merge full pool without resetting player position. */
   private mergePool(source: GameQuestion[]): void {
+    const prevLen = this.pool.length;
+    const prevSessionLen = this.session.length;
     const existingIds = new Set(this.pool.map((q) => q.id));
     const merged = [...this.pool];
     for (const q of source) {
       if (!existingIds.has(q.id)) merged.push(q);
     }
     this.pool = merged;
+    if (merged.length !== prevLen) this.syncAnswerPool();
 
     const playedIds = new Set(this.session.slice(0, this.currentIndex).map((q) => q.id));
     const tail = this.session.slice(this.currentIndex + 1);
@@ -154,7 +162,10 @@ export class QuestionBuffer {
       this.currentIndex,
       Math.min(BUFFER_AHEAD, this.session.length - this.currentIndex)
     );
-    this.emit();
+
+    if (merged.length !== prevLen || this.session.length !== prevSessionLen) {
+      this.emit();
+    }
   }
 
   rebuildSession(count: number): void {
@@ -162,7 +173,7 @@ export class QuestionBuffer {
     const source = this.pool.length > 0 ? this.pool : [];
     this.session = buildSessionQueue(source, this.slug, count);
     this.currentIndex = 0;
-    for (const q of this.session) this.markState(q.id, "pending");
+    for (const q of this.session) this.markState(q.id, "ready");
     this.emit();
   }
 
@@ -183,7 +194,7 @@ export class QuestionBuffer {
   }
 
   get answerPool(): string[] {
-    return getAnswerPool(this.pool);
+    return this._answerPool;
   }
 
   get isReady(): boolean {

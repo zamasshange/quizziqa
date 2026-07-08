@@ -25,9 +25,9 @@ export interface PreparedAsset {
   state: "loading" | "thumb" | "full";
 }
 
-const RETRY_DELAYS_MS = [1000, 2000, 5000, 10000];
-const LOAD_TIMEOUT_MS = 8000;
-const MAX_CONCURRENT = 8;
+const RETRY_DELAYS_MS = [1000, 2000, 5000];
+const LOAD_TIMEOUT_MS = 6000;
+const MAX_CONCURRENT = 6;
 const THUMB_WIDTH = 180;
 
 const memoryReady = new Set<string>();

@@ -109,6 +109,11 @@ export function GamePlayer({
   const freezeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordedRef = useRef(false);
   const answerTimeRef = useRef(Date.now());
+  const answerPoolRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    answerPoolRef.current = answerPool;
+  }, [answerPool]);
 
   const backHref = categorySlug ? `/categories/${categorySlug}` : "/categories";
   const mediaVariant = inferMediaVariant(initialGame.slug, initialGame.mode, {
@@ -122,7 +127,7 @@ export function GamePlayer({
 
   const resetRound = useCallback(
     (q: GameQuestion, hideWrong = 0) => {
-      setOptions(shuffleOptions(q, answerPool, hideWrong));
+      setOptions(shuffleOptions(q, answerPoolRef.current, hideWrong));
       setHintText(null);
       setDisplayFact(null);
       setSelectedAnswer(null);
@@ -130,7 +135,7 @@ export function GamePlayer({
       if (timerLimit) setTimeLeft(timerLimit);
       answerTimeRef.current = Date.now();
     },
-    [timerLimit, answerPool]
+    [timerLimit]
   );
 
   useEffect(() => {
@@ -141,7 +146,8 @@ export function GamePlayer({
     if (!question) return;
     resetRound(question);
     setRoundState("playing");
-  }, [currentIndex, question?.id, resetRound]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset on question change
+  }, [currentIndex, question?.id]);
 
   const enrichFact = useCallback(async (baseFact: string, answer: string) => {
     setDisplayFact(baseFact);
@@ -335,7 +341,7 @@ export function GamePlayer({
   const handleFifty = () => {
     if (fiftyUsed >= 1 || !question) return;
     setFiftyUsed(1);
-    setOptions(shuffleOptions(question, answerPool, 2));
+    setOptions(shuffleOptions(question, answerPoolRef.current, 2));
     audioManager.play("powerUp");
   };
 

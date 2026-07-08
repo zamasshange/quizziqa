@@ -27,7 +27,18 @@ export function useQuestionBuffer(
 
   useEffect(() => {
     const buf = bufferRef.current!;
-    return buf.subscribe(forceUpdate);
+    let lastIndex = buf.index;
+    let lastSessionLen = buf.questions.length;
+
+    return buf.subscribe(() => {
+      const index = buf.index;
+      const sessionLen = buf.questions.length;
+      if (index !== lastIndex || sessionLen !== lastSessionLen) {
+        lastIndex = index;
+        lastSessionLen = sessionLen;
+        forceUpdate();
+      }
+    });
   }, [forceUpdate]);
 
   useEffect(() => {
