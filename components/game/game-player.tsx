@@ -8,17 +8,10 @@ import { inferMediaVariant } from "@/lib/media/images";
 import { usePlayerProgress } from "@/hooks/use-player-progress";
 import { useGameSettings } from "@/hooks/use-game-settings";
 import { calcRoundXp, calcRoundCoins } from "@/lib/game/session-utils";
-import {
-  buildSessionQueue,
-  shuffleOptions,
-  getAnswerPool,
-  recordSessionQuestions,
-} from "@/lib/game/question-engine";
-import {
-  warmSessionImages,
-  preloadQuestions,
-} from "@/hooks/use-question-image";
-import { ensureQuestionImages, wikiFromQuestionId } from "@/lib/media/resolve-image";
+import { shuffleOptions } from "@/lib/game/question-engine";
+import { wikiFromQuestionId } from "@/lib/media/resolve-image";
+import { ensureQuestionImages } from "@/lib/media/resolve-image";
+import { useQuestionBuffer } from "@/hooks/use-question-buffer";
 import { DEFAULT_SETTINGS } from "@/lib/game/settings";
 import { audioManager } from "@/lib/audio/audio-manager";
 import { PlayHud } from "@/components/game/play/play-hud";
@@ -39,11 +32,6 @@ interface GamePlayerProps {
 
 type RoundState = "playing" | "correct" | "incorrect" | "finished";
 
-function buildInitialSession(game: Game, count: number) {
-  const pool = ensureQuestionImages(game.questions);
-  return buildSessionQueue(pool, game.slug, count);
-}
-
 export function GamePlayer({
   game: initialGame,
   isDaily,
@@ -54,13 +42,35 @@ export function GamePlayer({
   const { stats, hydrated, recordGame } = usePlayerProgress();
   const { settings, hydrated: settingsHydrated } = useGameSettings();
 
-  const [pool, setPool] = useState<GameQuestion[]>(() =>
-    ensureQuestionImages(initialGame.questions)
+  const variantForQuestion = useCallback(
+    (q: GameQuestion) =>
+      inferMediaVariant(initialGame.slug, initialGame.mode, {
+        hasImage: !!q.image,
+        hasEmoji: !!q.emoji,
+      }),
+    [initialGame.slug, initialGame.mode]
   );
-  const [sessionQuestions, setSessionQuestions] = useState<GameQuestion[]>(() =>
-    buildInitialSession(initialGame, DEFAULT_SETTINGS.questionCount)
+
+  const sessionCount = settingsHydrated
+    ? settings.questionCount
+    : DEFAULT_SETTINGS.questionCount;
+
+  const {
+    current: question,
+    questions: sessionQuestions,
+    index: currentIndex,
+    answerPool,
+    advance: bufferAdvance,
+    isFinished,
+    finishSession,
+    rebuildSession,
+  } = useQuestionBuffer(
+    initialGame.slug,
+    ensureQuestionImages(initialGame.questions),
+    sessionCount,
+    variantForQuestion
   );
-  const [currentIndex, setCurrentIndex] = useState(0);
+
   const [roundState, setRoundState] = useState<RoundState>("playing");
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -99,45 +109,7 @@ export function GamePlayer({
   const freezeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordedRef = useRef(false);
   const answerTimeRef = useRef(Date.now());
-  const answerPoolRef = useRef<string[]>(
-    getAnswerPool(ensureQuestionImages(initialGame.questions))
-  );
 
-  const variantForQuestion = useCallback(
-    (q: GameQuestion) =>
-      inferMediaVariant(initialGame.slug, initialGame.mode, {
-        hasImage: !!q.image,
-        hasEmoji: !!q.emoji,
-      }),
-    [initialGame.slug, initialGame.mode]
-  );
-
-  // Image pipeline — warm entire session on entry, keep 6-question rolling buffer
-  useEffect(() => {
-    warmSessionImages(sessionQuestions, variantForQuestion);
-  }, [sessionQuestions, variantForQuestion]);
-
-  useEffect(() => {
-    preloadQuestions(sessionQuestions, currentIndex, variantForQuestion, 6);
-  }, [currentIndex, sessionQuestions, variantForQuestion]);
-
-  // Touchpad / wheel scroll when body is locked (play-mode)
-  useEffect(() => {
-    const scroller = scrollRef.current;
-    const root = playRootRef.current;
-    if (!scroller || !root) return;
-
-    const onWheel = (e: WheelEvent) => {
-      if (scroller.scrollHeight <= scroller.clientHeight) return;
-      scroller.scrollTop += e.deltaY;
-      e.preventDefault();
-    };
-
-    root.addEventListener("wheel", onWheel, { passive: false });
-    return () => root.removeEventListener("wheel", onWheel);
-  }, []);
-
-  const question = sessionQuestions[currentIndex];
   const backHref = categorySlug ? `/categories/${categorySlug}` : "/categories";
   const mediaVariant = inferMediaVariant(initialGame.slug, initialGame.mode, {
     hasImage: !!question?.image,
@@ -150,7 +122,7 @@ export function GamePlayer({
 
   const resetRound = useCallback(
     (q: GameQuestion, hideWrong = 0) => {
-      setOptions(shuffleOptions(q, answerPoolRef.current, hideWrong));
+      setOptions(shuffleOptions(q, answerPool, hideWrong));
       setHintText(null);
       setDisplayFact(null);
       setSelectedAnswer(null);
@@ -158,41 +130,8 @@ export function GamePlayer({
       if (timerLimit) setTimeLeft(timerLimit);
       answerTimeRef.current = Date.now();
     },
-    [timerLimit]
+    [timerLimit, answerPool]
   );
-
-  // Background: fetch full pool and upgrade session (never blocks UI)
-  useEffect(() => {
-    if (!settingsHydrated) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/games/${initialGame.slug}/session?count=${settings.questionCount}`
-        );
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as Game & { questions: GameQuestion[] };
-        const source = ensureQuestionImages(data.questions ?? []);
-        if (cancelled || source.length === 0) return;
-
-        setPool(source);
-        answerPoolRef.current = getAnswerPool(source);
-        const session = buildSessionQueue(source, initialGame.slug, settings.questionCount);
-        if (session.length === 0 || cancelled) return;
-
-        setSessionQuestions(session);
-        setCurrentIndex(0);
-        warmSessionImages(session, variantForQuestion);
-      } catch {
-        /* keep SSR session */
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [initialGame.slug, settings.questionCount, settingsHydrated, variantForQuestion]);
 
   useEffect(() => {
     if (settingsHydrated && timerLimit) setTimeLeft(timerLimit);
@@ -254,6 +193,22 @@ export function GamePlayer({
     };
   }, [currentIndex, roundState, timerLimit, timerFrozen, handleWrong]);
 
+  // Touchpad / wheel scroll when body is locked (play-mode)
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    const root = playRootRef.current;
+    if (!scroller || !root) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (scroller.scrollHeight <= scroller.clientHeight) return;
+      scroller.scrollTop += e.deltaY;
+      e.preventDefault();
+    };
+
+    root.addEventListener("wheel", onWheel, { passive: false });
+    return () => root.removeEventListener("wheel", onWheel);
+  }, []);
+
   const handleAnswer = useCallback(
     (answer: string) => {
       if (roundState !== "playing" || !question) return;
@@ -294,23 +249,17 @@ export function GamePlayer({
   const advanceQuestion = useCallback(() => {
     audioManager.playNext();
     setFirstQuestion(false);
-    if (currentIndex + 1 >= sessionQuestions.length) {
+    if (isFinished()) {
       setRoundState("finished");
-      recordSessionQuestions(
-        initialGame.slug,
-        sessionQuestions.map((q) => q.id)
-      );
+      finishSession();
     } else {
       setRoundState("playing");
-      setCurrentIndex((i) => i + 1);
+      bufferAdvance();
     }
-  }, [currentIndex, sessionQuestions, initialGame.slug]);
+  }, [isFinished, finishSession, bufferAdvance]);
 
   const startNewSession = useCallback(() => {
-    const source = pool.length > 0 ? pool : ensureQuestionImages(initialGame.questions);
-    const session = buildSessionQueue(source, initialGame.slug, settings.questionCount);
-    setSessionQuestions(session);
-    setCurrentIndex(0);
+    rebuildSession();
     setRoundState("playing");
     setSelectedAnswer(null);
     setScore(0);
@@ -332,9 +281,7 @@ export function GamePlayer({
     setBonusXp(0);
     setFirstQuestion(true);
     recordedRef.current = false;
-    if (session[0]) resetRound(session[0]);
-    warmSessionImages(session, variantForQuestion);
-  }, [pool, initialGame.slug, settings.questionCount, resetRound, variantForQuestion]);
+  }, [rebuildSession]);
 
   useEffect(() => {
     if (roundState !== "finished" || recordedRef.current) return;
@@ -388,7 +335,7 @@ export function GamePlayer({
   const handleFifty = () => {
     if (fiftyUsed >= 1 || !question) return;
     setFiftyUsed(1);
-    setOptions(shuffleOptions(question, answerPoolRef.current, 2));
+    setOptions(shuffleOptions(question, answerPool, 2));
     audioManager.play("powerUp");
   };
 
@@ -465,7 +412,7 @@ export function GamePlayer({
           backHref={backHref}
           onReplay={startNewSession}
         />
-      ) : (
+      ) : !question ? null : (
         <div className="relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden">
           <div
             ref={scrollRef}
@@ -595,7 +542,7 @@ export function GamePlayer({
         </div>
       )}
 
-      {(roundState === "correct" || roundState === "incorrect") && (
+      {(roundState === "correct" || roundState === "incorrect") && question && (
         <PlayResultCelebration
           isCorrect={roundState === "correct"}
           answer={question.answer}

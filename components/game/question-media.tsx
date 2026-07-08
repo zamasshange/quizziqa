@@ -1,17 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { MediaVariant } from "@/lib/media/images";
-import {
-  getFlagUrl,
-  getPlayableUrls,
-} from "@/lib/media/image-candidates";
-import {
-  firstReady,
-  loadFirst,
-  preloadUrl,
-} from "@/lib/media/image-pipeline";
+import { usePreparedAsset } from "@/hooks/use-prepared-asset";
 
 interface QuestionMediaProps {
   image?: string;
@@ -26,106 +17,41 @@ interface QuestionMediaProps {
   categoryEmoji?: string;
 }
 
-function MediaSkeleton() {
-  return (
-    <div className="absolute inset-0 overflow-hidden rounded-xl bg-gradient-to-br from-black/[0.04] to-black/[0.08]">
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-    </div>
-  );
-}
-
-function CategoryPlaceholder({ emoji }: { emoji: string }) {
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-secondary to-white">
-      <span className="text-5xl md:text-6xl opacity-80">{emoji}</span>
-    </div>
-  );
-}
-
 function MediaImage({
   wikiKey,
   imageUrl,
   variant,
-  categoryEmoji = "🎯",
 }: {
   wikiKey?: string;
   imageUrl?: string;
   variant: MediaVariant;
-  categoryEmoji?: string;
 }) {
-  const urls = useMemo(() => {
-    if (imageUrl?.includes("flagcdn.com")) return getFlagUrl(imageUrl);
-    if (wikiKey) return getPlayableUrls(wikiKey, variant, imageUrl);
-    if (imageUrl?.startsWith("http")) return [imageUrl];
-    return [];
-  }, [wikiKey, imageUrl, variant]);
+  const { displayUrl, state, fullReady } = usePreparedAsset(
+    wikiKey,
+    imageUrl,
+    variant
+  );
 
-  const [urlIndex, setUrlIndex] = useState(0);
-  const [imgReady, setImgReady] = useState(false);
-  const [exhausted, setExhausted] = useState(false);
-
-  const currentUrl = urls[urlIndex] ?? null;
-
-  useEffect(() => {
-    setUrlIndex(0);
-    setImgReady(false);
-    setExhausted(false);
-
-    const hit = firstReady(urls);
-    if (hit) {
-      const idx = urls.indexOf(hit);
-      if (idx >= 0) setUrlIndex(idx);
-    } else if (urls.length) {
-      void loadFirst(urls);
-    }
-  }, [urls]);
-
-  useEffect(() => {
-    if (!currentUrl || imgReady) return;
-    const timer = setTimeout(() => {
-      if (urlIndex + 1 < urls.length) {
-        setUrlIndex((i) => i + 1);
-      } else {
-        setExhausted(true);
-      }
-    }, 4000);
-    void preloadUrl(currentUrl);
-    return () => clearTimeout(timer);
-  }, [currentUrl, urlIndex, urls.length, imgReady]);
-
-  const handleError = () => {
-    setImgReady(false);
-    if (urlIndex + 1 < urls.length) {
-      setUrlIndex((i) => i + 1);
-    } else {
-      setExhausted(true);
-    }
-  };
-
-  const showPlaceholder = exhausted && !imgReady;
-  const showSkeleton = !imgReady && !showPlaceholder && !!currentUrl;
+  const showThumb = state === "thumb" && !fullReady;
+  const opacity = displayUrl ? "opacity-100" : "opacity-0";
 
   return (
-      <div className="relative w-full h-full min-h-0 flex items-center justify-center">
-      {showSkeleton && <MediaSkeleton />}
-      {showPlaceholder && <CategoryPlaceholder emoji={categoryEmoji} />}
-
-      {currentUrl && (
+    <div className="relative w-full h-full min-h-0 flex items-center justify-center">
+      {displayUrl && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
-          key={currentUrl}
-          src={currentUrl}
+          key={displayUrl}
+          src={displayUrl}
           alt=""
           role="presentation"
           className={cn(
-            "relative z-10 block w-full h-full min-w-0 min-h-0 object-contain transition-opacity duration-300",
-            imgReady ? "opacity-100" : "opacity-0"
+            "relative z-10 block w-full h-full min-w-0 min-h-0 object-contain transition-opacity duration-500",
+            opacity,
+            showThumb && "blur-[0.5px] scale-[1.01]"
           )}
           decoding="async"
           loading="eager"
           fetchPriority="high"
-          onLoad={() => setImgReady(true)}
-          onError={handleError}
         />
       )}
     </div>
@@ -213,7 +139,7 @@ export function QuestionMedia({
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-black/15 bg-secondary mx-auto text-black/40",
+          "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-black/15 bg-secondary mx-auto",
           "w-full max-w-[280px] h-[160px] sm:h-[200px]",
           className
         )}
@@ -237,12 +163,7 @@ export function QuestionMedia({
             : cn("mx-auto rounded-xl", sizeClass)
         )}
       >
-        <MediaImage
-          wikiKey={wikiKey}
-          imageUrl={image}
-          variant={variant}
-          categoryEmoji={categoryEmoji}
-        />
+        <MediaImage wikiKey={wikiKey} imageUrl={image} variant={variant} />
       </div>
     </div>
   );

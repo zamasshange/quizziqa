@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { Clock, Star, Sparkles } from "lucide-react";
 import type { Game, GameMeta } from "@/lib/types";
 import { getCategoryById } from "@/lib/data/categories";
+import { prefetchGame } from "@/lib/game/background-worker";
 import { cn } from "@/lib/utils";
 
 interface GameCardProps {
@@ -21,7 +24,11 @@ export function GameCard({ game, fullWidth, grid }: GameCardProps) {
         !fullWidth && !grid && "shrink-0 w-[260px] sm:w-[280px]"
       )}
     >
-      <Link href={`/play/${game.slug}`}>
+      <Link
+        href={`/play/${game.slug}`}
+        onMouseEnter={() => prefetchGame(game.slug)}
+        onFocus={() => prefetchGame(game.slug)}
+      >
         <div className="overflow-hidden rounded-xl bg-white border border-black/15 shadow-soft-1 active:scale-[0.98] transition-transform duration-100 h-full">
           <div className={cn(
             "relative bg-petrol-dark flex items-center justify-center",
