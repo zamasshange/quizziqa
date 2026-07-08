@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
-import { PipelineBootstrap } from "@/components/providers/pipeline-bootstrap";
 import { PlayModeBody } from "@/components/play-mode-body";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
@@ -62,7 +61,6 @@ export default function RootLayout({
             {children}
           </QueryProvider>
           <ServiceWorkerRegister />
-          <PipelineBootstrap />
         </AuthProvider>
       </body>
     </html>

@@ -9,9 +9,9 @@ import { usePlayerProgress } from "@/hooks/use-player-progress";
 import { useGameSettings } from "@/hooks/use-game-settings";
 import { calcRoundXp, calcRoundCoins } from "@/lib/game/session-utils";
 import { shuffleOptions } from "@/lib/game/question-engine";
-import { wikiFromQuestionId } from "@/lib/media/resolve-image";
-import { ensureQuestionImages } from "@/lib/media/resolve-image";
+import { wikiFromQuestionId, ensureQuestionImages } from "@/lib/media/resolve-image";
 import { useQuestionBuffer } from "@/hooks/use-question-buffer";
+import { preloadQuestions } from "@/hooks/use-question-image";
 import { DEFAULT_SETTINGS } from "@/lib/game/settings";
 import { audioManager } from "@/lib/audio/audio-manager";
 import { PlayHud } from "@/components/game/play/play-hud";
@@ -114,6 +114,10 @@ export function GamePlayer({
   useEffect(() => {
     answerPoolRef.current = answerPool;
   }, [answerPool]);
+
+  useEffect(() => {
+    preloadQuestions(sessionQuestions, currentIndex, variantForQuestion, 8);
+  }, [currentIndex, sessionQuestions, variantForQuestion]);
 
   const backHref = categorySlug ? `/categories/${categorySlug}` : "/categories";
   const mediaVariant = inferMediaVariant(initialGame.slug, initialGame.mode, {

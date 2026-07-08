@@ -39,8 +39,9 @@ export function getOriginalUrls(wiki: string): string[] {
 }
 
 /**
- * URLs for <img src> — verified originals first, proxy last.
- * Original Wikimedia URLs return 200; our thumb URLs return 400.
+ * URLs for <img src>.
+ * Same-origin proxy FIRST — always resolves on the server, CDN-cached, no CORS.
+ * Direct Wikimedia URLs as optional fast path when already in browser cache.
  */
 export function getPlayableUrls(
   wiki: string,
@@ -50,21 +51,25 @@ export function getPlayableUrls(
   const width = VARIANT_WIDTH[variant] ?? 520;
   const urls: string[] = [];
 
+  if (bakedImage?.includes("flagcdn.com") || bakedImage?.includes("image.tmdb.org")) {
+    return [bakedImage];
+  }
+
+  if (bakedImage?.startsWith("/api/media")) {
+    urls.push(bakedImage);
+  }
+
+  urls.push(getMediaProxyUrl(wiki, width));
+
   if (
     bakedImage?.startsWith("http") &&
     !bakedImage.includes("/api/media") &&
     !bakedImage.includes("commons.wikimedia.org")
   ) {
-    // Prefer TMDB / trusted CDN baked URLs first
-    if (bakedImage.includes("image.tmdb.org") || bakedImage.includes("flagcdn.com")) {
-      urls.unshift(bakedImage);
-    } else {
-      urls.push(bakedImage);
-    }
+    urls.push(bakedImage);
   }
 
   urls.push(...getOriginalUrls(wiki));
-  urls.push(getMediaProxyUrl(wiki, width));
 
   return [...new Set(urls)];
 }
@@ -87,7 +92,6 @@ export function getDirectCandidates(imageUrl: string): string[] {
   return [];
 }
 
-// Keep for any legacy imports — do NOT use for primary loading
 export function wikimediaThumbUrl(url: string, _width: number): string {
   return url;
 }

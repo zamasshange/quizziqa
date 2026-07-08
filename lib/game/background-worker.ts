@@ -5,7 +5,7 @@ import type { GameQuestion } from "@/lib/types";
 import type { MediaVariant } from "@/lib/media/images";
 import { inferMediaVariant } from "@/lib/media/images";
 import { ensureQuestionImages } from "@/lib/media/resolve-image";
-import { prepareAhead } from "@/lib/media/asset-manager";
+import { preloadAhead, warmSession } from "@/lib/media/image-pipeline";
 import { idbGetQuestions, idbPutQuestions } from "@/lib/cache/idb-store";
 import {
   POPULAR_GAME_SLUGS,
@@ -54,7 +54,7 @@ async function preloadCategory(slug: string): Promise<void> {
   if (!questions.length) return;
 
   const slice = questions.slice(0, CATEGORY_PRELOAD_COUNT);
-  prepareAhead(slice, 0, variantForSlug(slug), CATEGORY_PRELOAD_COUNT);
+  preloadAhead(slice, 0, variantForSlug(slug), CATEGORY_PRELOAD_COUNT);
 }
 
 export function prioritizeCategory(slug: string): void {

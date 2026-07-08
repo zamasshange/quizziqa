@@ -10,7 +10,7 @@ import {
   getAnswerPool,
   recordSessionQuestions,
 } from "@/lib/game/question-engine";
-import { prepareAhead, warmSession } from "@/lib/media/asset-manager";
+import { preloadAhead, warmSession } from "@/lib/media/image-pipeline";
 import { idbGetQuestions, idbPutQuestions } from "@/lib/cache/idb-store";
 import {
   BUFFER_AHEAD,
@@ -66,7 +66,7 @@ export class QuestionBuffer {
   }
 
   private prepareRange(start: number, count: number): void {
-    prepareAhead(this.session, start, this.variantFor, count);
+    preloadAhead(this.session, start, this.variantFor, count);
   }
 
   private syncAnswerPool(): void {

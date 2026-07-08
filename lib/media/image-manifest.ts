@@ -132,7 +132,7 @@ export const imageManifest: Record<string, string> = {
   "Jennifer_Lawrence": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Jennifer_Lawrence_in_2018.png",
   "Joe_Biden": "https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg",
   "John_F._Kennedy": "https://upload.wikimedia.org/wikipedia/commons/c/c3/John_F._Kennedy%2C_White_House_color_photo_portrait.jpg",
-  "Joko_Widodo": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Joko_Widodo_2019_official_portrait_%28cropped%29.jpg",
+  "Joko_Widodo": "https://upload.wikimedia.org/wikipedia/commons/b/be/Joko_Widodo_2019_official_portrait.jpg",
   "Jupiter": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter_OPAL_2024.png",
   "Jurassic_Park_(film)": "https://upload.wikimedia.org/wikipedia/en/e/e7/Jurassic_Park_poster.jpg",
   "Justin_Trudeau": "https://upload.wikimedia.org/wikipedia/commons/3/32/Prime_Minister_Trudeau%27s_message_on_Christmas_2023_%280m29s%29_%28cropped%29.jpg",
@@ -314,7 +314,7 @@ export const imageManifest: Record<string, string> = {
   "Wheel": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Landesmuseum_W%C3%BCrttemberg_Kelten_011.4.jpg/960px-Landesmuseum_W%C3%BCrttemberg_Kelten_011.4.jpg",
   "William_Shakespeare": "https://upload.wikimedia.org/wikipedia/commons/2/21/William_Shakespeare_by_John_Taylor%2C_edited.jpg",
   "Winston_Churchill": "https://upload.wikimedia.org/wikipedia/commons/0/02/Sir_Winston_Churchill_-_19086236948_%28restored%29.jpg",
-  "Xi_Jinping": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Xi_Jinping_%282019%29.jpg",
+  "Xi_Jinping": "https://upload.wikimedia.org/wikipedia/commons/7/7e/Xi_Jinping_meets_Putin_May_2026.jpg",
   "Zendaya": "https://upload.wikimedia.org/wikipedia/commons/2/28/Zendaya_-_2019_by_Glenn_Francis.jpg",
 };
 

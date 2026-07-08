@@ -7,11 +7,6 @@ import {
   getFlagUrl,
   getPlayableUrls,
 } from "@/lib/media/image-candidates";
-import {
-  firstReady,
-  loadFirst,
-  preloadUrl,
-} from "@/lib/media/asset-manager";
 
 interface QuestionMediaProps {
   image?: string;
@@ -26,14 +21,6 @@ interface QuestionMediaProps {
   categoryEmoji?: string;
 }
 
-function MediaSkeleton() {
-  return (
-    <div className="absolute inset-0 overflow-hidden rounded-xl bg-gradient-to-br from-black/[0.04] to-black/[0.08]">
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-    </div>
-  );
-}
-
 function MediaImage({
   wikiKey,
   imageUrl,
@@ -44,77 +31,38 @@ function MediaImage({
   variant: MediaVariant;
 }) {
   const urls = useMemo(() => {
-    if (imageUrl?.includes("flagcdn.com")) return getFlagUrl(imageUrl);
+    if (imageUrl?.includes("flagcdn.com") || imageUrl?.includes("image.tmdb.org")) {
+      return [imageUrl];
+    }
+    if (imageUrl?.startsWith("/api/media")) return [imageUrl];
     if (wikiKey) return getPlayableUrls(wikiKey, variant, imageUrl);
     if (imageUrl?.startsWith("http")) return [imageUrl];
     return [];
   }, [wikiKey, imageUrl, variant]);
 
   const [urlIndex, setUrlIndex] = useState(0);
-  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
-  const [imgReady, setImgReady] = useState(false);
-
-  const currentUrl = displayUrl ?? urls[urlIndex] ?? null;
+  const src = urls[urlIndex] ?? null;
 
   useEffect(() => {
     setUrlIndex(0);
-    setDisplayUrl(null);
-    setImgReady(false);
-
-    const hit = firstReady(urls);
-    if (hit) {
-      setDisplayUrl(hit);
-      setImgReady(true);
-      return;
-    }
-
-    if (urls.length) {
-      void loadFirst(urls, "critical", "full").then((loaded) => {
-        if (loaded) {
-          setDisplayUrl(loaded);
-          setImgReady(true);
-        }
-      });
-    }
   }, [urls]);
 
-  useEffect(() => {
-    if (!currentUrl || imgReady) return;
-    void preloadUrl(currentUrl, "critical", "full");
-  }, [currentUrl, imgReady]);
-
-  const handleError = () => {
-    setImgReady(false);
-    setDisplayUrl(null);
-    if (urlIndex + 1 < urls.length) {
-      setUrlIndex((i) => i + 1);
-    }
-  };
-
-  const showSkeleton = !imgReady && !!currentUrl;
+  if (!src) return null;
 
   return (
-    <div className="relative w-full h-full min-h-0 flex items-center justify-center">
-      {showSkeleton && <MediaSkeleton />}
-      {currentUrl && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          key={currentUrl}
-          src={currentUrl}
-          alt=""
-          role="presentation"
-          className={cn(
-            "relative z-10 block w-full h-full min-w-0 min-h-0 object-contain transition-opacity duration-300",
-            imgReady ? "opacity-100" : "opacity-0"
-          )}
-          decoding="async"
-          loading="eager"
-          fetchPriority="high"
-          onLoad={() => setImgReady(true)}
-          onError={handleError}
-        />
-      )}
-    </div>
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={src}
+      alt=""
+      role="presentation"
+      className="relative z-10 block w-full h-full min-w-0 min-h-0 object-contain"
+      decoding="async"
+      loading="eager"
+      fetchPriority="high"
+      onError={() => {
+        if (urlIndex + 1 < urls.length) setUrlIndex((i) => i + 1);
+      }}
+    />
   );
 }
 
