@@ -469,7 +469,7 @@ export function GamePlayer({
         <div className="relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden">
           <div
             ref={scrollRef}
-            className="play-scroll-area flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-y-auto px-3 md:px-6 lg:px-10 xl:px-12 pt-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-6"
+            className="play-scroll-area flex-1 min-h-0 flex flex-col overflow-hidden md:overflow-y-auto overscroll-y-auto px-2.5 md:px-6 lg:px-10 xl:px-12 pt-0.5 pb-1 md:pb-6"
           >
             <div className="flex flex-1 min-h-0 items-stretch justify-center gap-4 lg:gap-8 w-full max-w-[1720px] mx-auto">
               <PlaySidePanel
@@ -487,8 +487,8 @@ export function GamePlayer({
                 bestCombo={bestCombo}
               />
 
-              <div className="play-game-card play-game-card--fill flex-1 min-w-0 min-h-0 flex flex-col md:flex-row items-center md:items-stretch gap-3 md:gap-8 lg:gap-12 p-3 md:p-8 lg:p-10">
-                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:min-h-0 md:max-w-[50%] min-h-[200px] md:min-h-0">
+              <div className="play-game-card play-game-card--fill flex-1 min-w-0 min-h-0 flex flex-col md:flex-row items-stretch gap-1.5 md:gap-8 lg:gap-12 p-2 md:p-8 lg:p-10">
+                <div className="relative shrink-0 flex items-center justify-center w-full md:flex-1 md:min-h-0 md:max-w-[50%] max-h-[28vh] md:max-h-none">
                     <QuestionMedia
                       key={question.id}
                       frameless
@@ -500,11 +500,11 @@ export function GamePlayer({
                       alt=""
                       variant={mediaVariant}
                       categoryEmoji={categoryEmoji}
-                      className="h-full"
+                      className="h-full max-h-full"
                     />
 
                   {(hintText || hintLoading) && (
-                    <div className="absolute -bottom-2 inset-x-0 z-10 mx-auto max-w-[95%] bg-answer4/95 text-black rounded-xl px-3 py-2 text-[11px] font-bold border-2 border-black shadow-lg flex items-start gap-1.5">
+                    <div className="absolute -bottom-1 inset-x-0 z-10 mx-auto max-w-[95%] bg-answer4/95 text-black rounded-xl px-3 py-1.5 text-[10px] font-bold border-2 border-black shadow-lg flex items-start gap-1.5">
                       <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <span className="flex-1 line-clamp-2">
                         {hintLoading ? "Thinking…" : hintText}
@@ -524,7 +524,7 @@ export function GamePlayer({
                   )}
                 </div>
 
-                <div className="w-full md:flex-1 md:min-h-0 md:max-w-[50%] flex flex-col justify-center gap-2 md:gap-4 lg:gap-6">
+                <div className="w-full md:flex-1 md:min-h-0 md:max-w-[50%] flex flex-col justify-center gap-1.5 md:gap-4 lg:gap-6 min-h-0">
                   <PlayQuestionHeader
                     categoryEmoji={categoryEmoji}
                     categoryName={categoryName}
@@ -545,7 +545,7 @@ export function GamePlayer({
                     onSelect={handleAnswer}
                     questionId={question.id}
                     animateEntry={animateEntry}
-                    className="lg:gap-4 xl:gap-5"
+                    className="lg:gap-4 xl:gap-5 shrink-0"
                   />
 
                   {roundState === "playing" && (
@@ -573,7 +573,7 @@ export function GamePlayer({
           </div>
 
           {roundState === "playing" && (
-            <div className="shrink-0 md:hidden border-t border-black/10 bg-[#fffdf4] px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="shrink-0 md:hidden border-t border-black/10 bg-[#fffdf4] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               <PlayPowerUps
                 compact
                 hintsLeft={maxHints - hintsUsed}

@@ -14,16 +14,24 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
   title: {
-    default: "Guess Everything – Play & Guess Games",
-    template: "%s | Guess Everything",
+    default: "Quizzical – Play & Guess Games",
+    template: "%s | Quizzical",
   },
   description:
     "Play hundreds of guessing games across 19 categories. Earn XP, unlock achievements, maintain daily streaks, and learn something new with every answer.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/icons/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icons/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Guess Everything",
+    title: "Quizzical",
   },
 };
 
@@ -37,8 +45,9 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#FFFDF4" />
-        <link rel="apple-touch-icon" href="/icons/icon.svg" />
-        <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
       </head>
       <body className="antialiased">
         <QueryProvider>

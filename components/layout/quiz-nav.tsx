@@ -44,12 +44,12 @@ export function QuizNav({ minimal }: { minimal?: boolean }) {
   return (
     <nav className="relative z-10 h-14 md:h-20 w-full bg-[#fffdf4] border-b border-black/10 shadow-soft-1 md:shadow-none">
       <div className="custom-container h-full flex items-center gap-3">
-        <Link href="/" className="block h-9 md:h-12 w-28 md:w-40 shrink-0">
+        <Link href="/" className="block h-9 md:h-12 w-auto shrink-0">
           <Image
-            src="/images/logo.svg"
-            width={152}
-            height={41}
-            alt="Guess Everything"
+            src="/images/logo.png"
+            width={180}
+            height={180}
+            alt="Quizzical"
             draggable={false}
             className="h-full w-auto object-contain object-left"
             priority

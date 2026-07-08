@@ -49,8 +49,8 @@ export function PlayHud({
   const xpBar = xpProgressInLevel(xp);
 
   return (
-    <header className="relative z-20 shrink-0 px-3 md:px-6 lg:px-10 xl:px-12 pt-[max(0.35rem,env(safe-area-inset-top))] pb-1.5 md:pb-3 max-w-[1720px] mx-auto w-full border-b border-black/10 bg-[#fffdf4]">
-      <div className="flex items-center gap-1.5 md:gap-2 mb-1.5">
+    <header className="relative z-20 shrink-0 px-2.5 md:px-6 lg:px-10 xl:px-12 pt-[max(0.25rem,env(safe-area-inset-top))] pb-1 md:pb-3 max-w-[1720px] mx-auto w-full border-b border-black/10 bg-[#fffdf4]">
+      <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-1.5">
         <Link
           href={backHref}
           className="play-hud-pill shrink-0 !px-2.5 !py-1.5 hover:bg-secondary"
@@ -106,8 +106,8 @@ export function PlayHud({
       </div>
 
       {/* XP bar — always visible */}
-      <div className="mb-1.5 px-1">
-        <div className="flex justify-between text-[9px] font-bold text-black/50 mb-0.5">
+      <div className="mb-1 md:mb-1.5 px-1">
+        <div className="flex justify-between text-[8px] md:text-[9px] font-bold text-black/50 mb-0.5">
           <span>
             {xp.toLocaleString()} XP
             {sessionXp > 0 && (
@@ -118,7 +118,7 @@ export function PlayHud({
             {xpBar.current}/{xpBar.needed}
           </span>
         </div>
-        <div className="h-1.5 md:h-2 rounded-full bg-black/8 overflow-hidden border border-black/10">
+        <div className="h-1 md:h-2 rounded-full bg-black/8 overflow-hidden border border-black/10">
           <div
             className="h-full rounded-full bg-gradient-to-r from-btn-green to-btn-green-dark transition-[width] duration-700 ease-out"
             style={{ width: `${xpBar.percent}%` }}

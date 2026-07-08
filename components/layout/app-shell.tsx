@@ -17,12 +17,12 @@ export function AppShell({
     <div className="relative z-[1] flex flex-col min-h-dvh bg-background">
       {!hideNav && <QuizNav minimal={playMode} />}
 
-      <div className="relative flex flex-col flex-1 w-full overflow-hidden">
-        {playMode ? (
-          <div className="flex flex-col h-dvh max-h-dvh overflow-hidden w-full">
-            {children}
-          </div>
-        ) : (
+      {playMode ? (
+        <div className="relative flex flex-col flex-1 w-full h-dvh max-h-dvh overflow-hidden">
+          {children}
+        </div>
+      ) : (
+        <div className="relative flex flex-col flex-1 w-full">
           <div className="custom-container flex flex-col md:flex-row md:gap-6 flex-1 py-4">
             {!hideNav && (
               <aside className="hidden md:block md:w-36 lg:w-44 shrink-0">
@@ -69,8 +69,8 @@ export function AppShell({
               <main>{children}</main>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

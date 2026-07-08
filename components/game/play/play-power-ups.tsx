@@ -37,7 +37,7 @@ interface PlayPowerUpsProps {
   compact?: boolean;
 }
 
-const ICON = "h-5 w-5 md:h-4 md:w-4 shrink-0";
+const ICON = "h-3.5 w-3.5 md:h-4 md:w-4 shrink-0";
 
 export function PlayPowerUps({
   hintsLeft,
@@ -67,8 +67,8 @@ export function PlayPowerUps({
   return (
     <div
       className={cn(
-        "grid grid-cols-3 gap-2",
-        !compact && "md:grid-cols-6"
+        "grid gap-1.5 md:gap-2",
+        compact ? "grid-cols-6" : "grid-cols-3 md:grid-cols-6"
       )}
     >
       {items.map((item) => (
@@ -78,14 +78,14 @@ export function PlayPowerUps({
           disabled={item.disabled}
           onClick={item.onClick}
           className={cn(
-            "play-powerup-btn touch-target",
+            "play-powerup-btn",
             compact && "play-powerup-btn-compact",
             item.disabled && "opacity-40 cursor-not-allowed",
             item.id === "double" && doubleActive && "ring-2 ring-answer4"
           )}
         >
           {item.icon}
-          <span className="text-[10px] md:text-[9px] font-black leading-none mt-1">
+          <span className="text-[9px] md:text-[9px] font-black leading-none mt-0.5 truncate max-w-full px-0.5">
             {item.label}
           </span>
           {item.count > 0 && (

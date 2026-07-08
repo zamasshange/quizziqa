@@ -1,17 +1,29 @@
 {
-  "name": "Guess Everything",
-  "short_name": "GuessAll",
+  "name": "Quizzical",
+  "short_name": "Quizzical",
   "description": "Play hundreds of guessing games. Earn XP, learn, and compete!",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fffdf4",
+  "background_color": "#000000",
   "theme_color": "#fffdf4",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
       "purpose": "any"
     }
   ],
