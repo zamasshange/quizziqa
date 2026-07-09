@@ -4,6 +4,8 @@
 import { getManifestImage } from "@/lib/media/image-manifest";
 import { fallbackImages } from "@/lib/media/fallback-images";
 import { getOriginalUrls } from "@/lib/media/image-candidates";
+import { isMediaQuizWiki } from "@/lib/media/media-quiz";
+import { fetchWikiSceneImage } from "@/lib/media/wiki-scene-image";
 
 const UA =
   "Quizzical/1.0 (https://quizzical.site; educational quiz app)";
@@ -133,6 +135,15 @@ export async function resolveWikiImageBytes(
 ): Promise<{ buffer: ArrayBuffer; contentType: string } | null> {
   const tried = new Set<string>();
 
+  if (isMediaQuizWiki(wiki)) {
+    const sceneUrl = await fetchWikiSceneImage(wiki);
+    if (sceneUrl && !tried.has(sceneUrl)) {
+      tried.add(sceneUrl);
+      const hit = await fetchImageBytes(sceneUrl);
+      if (hit) return hit;
+    }
+  }
+
   for (const url of getOriginalUrls(wiki)) {
     if (tried.has(url)) continue;
     tried.add(url);
@@ -151,6 +162,7 @@ export async function resolveWikiImageBytes(
 }
 
 export function getStaticImageUrl(wiki: string): string | undefined {
+  if (isMediaQuizWiki(wiki)) return undefined;
   return getOriginalUrls(wiki)[0] ?? getManifestImage(wiki) ?? fallbackImages[wiki];
 }
 

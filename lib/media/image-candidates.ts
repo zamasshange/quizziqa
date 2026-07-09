@@ -1,5 +1,6 @@
 import { getManifestImage } from "@/lib/media/image-manifest";
 import { fallbackImages } from "@/lib/media/fallback-images";
+import { isMediaQuizWiki } from "@/lib/media/media-quiz";
 import { getMediaProxyUrl } from "@/lib/media/media-url";
 import type { MediaVariant } from "@/lib/media/images";
 
@@ -28,6 +29,10 @@ function isGoodUrl(url: string): boolean {
 
 /** Original verified URLs from manifest — never auto-generated thumbs (they 400). */
 export function getOriginalUrls(wiki: string): string[] {
+  if (isMediaQuizWiki(wiki)) {
+    return [];
+  }
+
   const urls: string[] = [];
   const manifest = getManifestImage(wiki);
   const fallback = fallbackImages[wiki];

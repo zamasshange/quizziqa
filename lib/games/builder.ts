@@ -4,7 +4,11 @@ import type { EntityEntry } from "@/lib/data/entities";
 import { fetchFlagImages } from "@/lib/wikipedia/client";
 import { getFlagUrl } from "@/lib/media/images";
 import { resolveEntityImage } from "@/lib/media/resolve-image";
-import { fetchTmdbPostersForEntities } from "@/lib/media/tmdb";
+import {
+  fetchTmdbQuizImagesForEntities,
+  type TmdbMediaType,
+} from "@/lib/media/tmdb";
+import { fetchWikiSceneImagesForEntities } from "@/lib/media/wiki-scene-image";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -34,6 +38,12 @@ function difficultyForIndex(i: number, total: number): Difficulty {
   return "expert";
 }
 
+function mediaQuizType(template: GameTemplate): TmdbMediaType | null {
+  if (template.slug === "guess-the-movie") return "movie";
+  if (template.slug === "guess-the-tv-show") return "tv";
+  return null;
+}
+
 export async function buildFullQuestionPool(
   template: GameTemplate
 ): Promise<GameQuestion[]> {
@@ -59,11 +69,16 @@ async function buildQuestionsFromEntities(
       )
     : new Map<string, string>();
 
-  const isMovieGame =
-    template.categoryId === "movies" || template.slug.includes("movie");
-  const tmdbPosters = isMovieGame
-    ? await fetchTmdbPostersForEntities(entities)
+  const tmdbType = mediaQuizType(template);
+  const tmdbScenes = tmdbType
+    ? await fetchTmdbQuizImagesForEntities(entities, tmdbType)
     : new Map<string, string>();
+
+  const needsWikiScene = entities.filter((e) => !tmdbScenes.has(e.wiki));
+  const wikiScenes =
+    tmdbType && needsWikiScene.length > 0
+      ? await fetchWikiSceneImagesForEntities(needsWikiScene.map((e) => e.wiki))
+      : new Map<string, string>();
 
   const allAnswers = entities.map(
     (e) => e.answer ?? e.wiki.replace(/_/g, " ")
@@ -77,9 +92,12 @@ async function buildQuestionsFromEntities(
     const flagUrl = template.useFlags
       ? flagImages.get(entity.wiki) ?? getFlagUrl(answer)
       : "";
-    const tmdb = tmdbPosters.get(entity.wiki);
+
+    const sceneImage =
+      tmdbScenes.get(entity.wiki) ?? wikiScenes.get(entity.wiki);
+
     const image =
-      tmdb ||
+      sceneImage ||
       resolveEntityImage(entity.wiki, answer, {
         flagUrl: flagUrl || undefined,
       });
