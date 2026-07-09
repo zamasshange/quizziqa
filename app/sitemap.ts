@@ -4,6 +4,9 @@ import { getAllGameSlugs } from "@/lib/games/registry";
 import { categories } from "@/lib/data/categories";
 import { collections } from "@/lib/data/collections";
 
+/** Regenerate on each request so production never serves a localhost sitemap from a bad build. */
+export const dynamic = "force-dynamic";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 

@@ -1,6 +1,5 @@
-/** Official site URL — always use quizzical.site for SEO canonicals. */
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://quizzical.site";
+/** Official production origin — used for sitemap, canonicals, and structured data. */
+export const CANONICAL_ORIGIN = "https://quizzical.site";
 
 export const SITE_NAME = "Quizzical";
 
@@ -37,8 +36,39 @@ export const OG_IMAGE_PATH = "/icons/icon-512.png";
 
 export const TWITTER_HANDLE = "@quizzical";
 
+function isLocalUrl(url: string): boolean {
+  return /localhost|127\.0\.0\.1/i.test(url);
+}
+
+/**
+ * Resolve the public site URL.
+ * Production NEVER uses localhost — sitemap/canonicals must always be quizzical.site.
+ */
+export function getSiteUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL_ENV === "production";
+
+  if (isProd) {
+    if (fromEnv && !isLocalUrl(fromEnv)) {
+      return fromEnv.replace(/\/$/, "");
+    }
+    return CANONICAL_ORIGIN;
+  }
+
+  if (fromEnv && !isLocalUrl(fromEnv)) {
+    return fromEnv.replace(/\/$/, "");
+  }
+
+  return fromEnv?.replace(/\/$/, "") || "http://localhost:3000";
+}
+
+/** @deprecated use getSiteUrl() — kept for static imports; prefer getSiteUrl() in sitemap/robots */
+export const SITE_URL = getSiteUrl();
+
 export function absoluteUrl(path = ""): string {
-  const base = SITE_URL.replace(/\/$/, "");
+  const base = getSiteUrl();
   if (!path || path === "/") return `${base}/`;
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }

@@ -5,7 +5,7 @@ import {
   SITE_KEYWORDS,
   SITE_TAGLINE,
   OG_IMAGE_PATH,
-  SITE_URL,
+  getSiteUrl,
   absoluteUrl,
 } from "@/lib/seo/site";
 
@@ -30,7 +30,7 @@ export function buildPageMetadata({
   const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
 
   return {
-    metadataBase: new URL(SITE_URL),
+    metadataBase: new URL(getSiteUrl()),
     title,
     description,
     keywords: keywords.join(", "),

@@ -1,7 +1,7 @@
 import {
   SITE_NAME,
   SITE_DESCRIPTION,
-  SITE_URL,
+  getSiteUrl,
   absoluteUrl,
 } from "@/lib/seo/site";
 
@@ -26,7 +26,7 @@ export function WebsiteJsonLd() {
         "@type": "WebSite",
         name: SITE_NAME,
         alternateName: ["Quizzical Quiz Games", "quizzical.site"],
-        url: SITE_URL,
+        url: getSiteUrl(),
         description: SITE_DESCRIPTION,
         inLanguage: "en",
         potentialAction: {
@@ -49,10 +49,10 @@ export function OrganizationJsonLd() {
         "@context": "https://schema.org",
         "@type": "Organization",
         name: SITE_NAME,
-        url: SITE_URL,
+        url: getSiteUrl(),
         logo: absoluteUrl("/icons/icon-512.png"),
         description: SITE_DESCRIPTION,
-        sameAs: [SITE_URL],
+        sameAs: [getSiteUrl()],
       }}
     />
   );
@@ -90,7 +90,7 @@ export function GameJsonLd({
         publisher: {
           "@type": "Organization",
           name: SITE_NAME,
-          url: SITE_URL,
+          url: getSiteUrl(),
         },
         isAccessibleForFree: true,
         inLanguage: "en",
