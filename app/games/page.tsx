@@ -1,6 +1,24 @@
+import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/app-shell";
 import { GameCard } from "@/components/games/game-card";
 import { getSortedDynamicTemplates } from "@/lib/games/registry";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "All Guessing Games – Guess the Celebrity, Flag, Movie & More",
+  description:
+    "Play every Quizzical guessing game free online. Guess the celebrity, flag, president, movie, animal, car, landmark, and more. Picture quizzes powered by Wikipedia.",
+  path: "/games",
+  keywords: [
+    "guess the celebrity",
+    "guess the flag",
+    "guess the movie",
+    "guess the president",
+    "guessing games list",
+    "free quiz games",
+    "quizzical games",
+  ],
+});
 
 export default function AllGamesPage() {
   const games = getSortedDynamicTemplates();
@@ -8,9 +26,9 @@ export default function AllGamesPage() {
   return (
     <AppShell>
       <div className="mb-6 text-center">
-        <h1 className="text-3xl font-black text-black">Guess the…</h1>
+        <h1 className="text-3xl font-black text-black">All Guessing Games</h1>
         <p className="text-sm font-bold text-black/60 mt-1">
-          {games.length} Wikipedia-powered guessing games
+          {games.length} free picture quiz games on Quizzical
         </p>
       </div>
 
@@ -18,7 +36,6 @@ export default function AllGamesPage() {
         {games.map((game) => (
           <GameCard
             key={game.id}
-            grid
             game={{
               id: game.id,
               slug: game.slug,
@@ -31,8 +48,8 @@ export default function AllGamesPage() {
               trending: game.trending,
               isNew: game.isNew,
               timeLimit: game.timeLimit,
-              mode: game.mode,
             }}
+            grid
           />
         ))}
       </div>

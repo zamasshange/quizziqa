@@ -5,6 +5,7 @@ import { GameCard } from "@/components/games/game-card";
 import { getCollectionBySlug, collections } from "@/lib/data/collections";
 import { getGameById } from "@/lib/data/games";
 import { QuizButtonLink } from "@/components/ui/quiz-button";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -18,7 +19,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const collection = getCollectionBySlug(slug);
   if (!collection) return { title: "Collection Not Found" };
-  return { title: collection.title, description: collection.description };
+  return buildPageMetadata({
+    title: `${collection.title} – Quiz Collection`,
+    description: `${collection.description} Play free guessing games in this Quizzical collection.`,
+    path: `/collections/${slug}`,
+    keywords: [collection.title.toLowerCase(), "quiz collection", "quizzical"],
+  });
 }
 
 export default async function CollectionDetailPage({ params }: Props) {

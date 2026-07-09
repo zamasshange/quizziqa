@@ -3,8 +3,11 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { GamePlayerLoader } from "@/components/game/game-player-loader";
+import { GameJsonLd, BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { getGameBySlugAsync, getAllGameSlugs } from "@/lib/games/registry";
 import { getCategoryById } from "@/lib/data/categories";
+import { buildGameMetadata } from "@/lib/seo/metadata";
+import { keywordsForGame } from "@/lib/seo/keywords";
 
 export const dynamic = "force-static";
 
@@ -20,7 +23,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const game = await getGameBySlugAsync(slug);
   if (!game) return { title: "Game Not Found" };
-  return { title: game.title, description: game.description };
+  return buildGameMetadata(
+    slug,
+    game.title,
+    game.description,
+    keywordsForGame(slug, game.title)
+  );
 }
 
 export default async function PlayPage({ params }: Props) {
@@ -33,6 +41,22 @@ export default async function PlayPage({ params }: Props) {
 
   return (
     <AppShell playMode>
+      <GameJsonLd
+        name={game.title}
+        description={game.description}
+        slug={slug}
+        category={category?.name}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", path: "/" },
+          { name: "Games", path: "/games" },
+          ...(category
+            ? [{ name: category.name, path: `/categories/${category.slug}` }]
+            : []),
+          { name: game.title, path: `/play/${slug}` },
+        ]}
+      />
       <Suspense
         fallback={
           <div className="flex-1 flex items-center justify-center min-h-[40dvh]">

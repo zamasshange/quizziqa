@@ -5,6 +5,9 @@ import { GameCard } from "@/components/games/game-card";
 import { getCategoryBySlug, categories } from "@/lib/data/categories";
 import { getGamesByCategoryId } from "@/lib/games/registry";
 import { QuizButtonLink } from "@/components/ui/quiz-button";
+import { buildCategoryMetadata } from "@/lib/seo/metadata";
+import { keywordsForCategory } from "@/lib/seo/keywords";
+import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -18,7 +21,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = getCategoryBySlug(slug);
   if (!category) return { title: "Category Not Found" };
-  return { title: category.name, description: category.description };
+  return buildCategoryMetadata(
+    slug,
+    category.name,
+    category.description,
+    keywordsForCategory(slug, category.name)
+  );
 }
 
 export default async function CategoryDetailPage({ params }: Props) {
@@ -30,14 +38,21 @@ export default async function CategoryDetailPage({ params }: Props) {
 
   return (
     <AppShell>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", path: "/" },
+          { name: "Categories", path: "/categories" },
+          { name: category.name, path: `/categories/${slug}` },
+        ]}
+      />
       <div className="text-center space-y-2 mb-6">
         <div className="text-5xl">{category.emoji}</div>
-        <h1 className="text-3xl font-black text-black">{category.name}</h1>
+        <h1 className="text-3xl font-black text-black">{category.name} Quiz Games</h1>
         <p className="text-sm font-bold text-black/60 max-w-md mx-auto">
           {category.description}
         </p>
         <p className="text-xs font-bold text-black/40">
-          {categoryGames.length} games available
+          {categoryGames.length} free games available
         </p>
       </div>
 

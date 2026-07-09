@@ -13,8 +13,16 @@ import {
 import { collections } from "@/lib/data/collections";
 import { siteStats } from "@/lib/data/stats";
 import { formatNumber } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { SITE_DESCRIPTION } from "@/lib/seo/site";
 import Link from "next/link";
 import { QuizButtonLink } from "@/components/ui/quiz-button";
+
+export const metadata = buildPageMetadata({
+  title: "Quizzical – Free Online Guessing & Quiz Games",
+  description: SITE_DESCRIPTION,
+  path: "/",
+});
 
 export default function HomePage() {
   const featured = getFeaturedGamesMeta();
@@ -28,6 +36,14 @@ export default function HomePage() {
       <DailyJoinBanner />
 
       <div className="md:pt-2 flex flex-col gap-4 pt-4">
+        <header className="sr-only">
+          <h1>Quizzical – Free Online Guessing &amp; Quiz Games</h1>
+          <p>
+            Play guess the celebrity, flag, movie, president, animal, and more.
+            Free picture quizzes and daily trivia challenges at quizzical.site.
+          </p>
+        </header>
+
         <PromoBanners />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -150,8 +166,6 @@ export default function HomePage() {
           </div>
         </section>
       </div>
-
-      <h1 className="sr-only">Guess Everything</h1>
     </AppShell>
   );
 }

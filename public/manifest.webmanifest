@@ -1,12 +1,15 @@
 {
-  "name": "Quizzical",
+  "id": "quizzical-site",
+  "name": "Quizzical – Free Online Guessing & Quiz Games",
   "short_name": "Quizzical",
-  "description": "Play hundreds of guessing games. Earn XP, learn, and compete!",
-  "start_url": "/",
+  "description": "Play free guessing games at quizzical.site — guess the celebrity, flag, movie, president, animal, and more. Daily quizzes, XP, and trivia.",
+  "start_url": "https://quizzical.site/",
+  "scope": "https://quizzical.site/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#fffdf4",
+  "background_color": "#FFFDF4",
+  "theme_color": "#FFFDF4",
   "orientation": "portrait-primary",
+  "lang": "en",
   "icons": [
     {
       "src": "/icons/icon-192.png",
