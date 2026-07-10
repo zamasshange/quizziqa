@@ -5,6 +5,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { WebsiteJsonLd, OrganizationJsonLd } from "@/components/seo/json-ld";
 import { buildHomeMetadata } from "@/lib/seo/metadata";
+import { Analytics } from "@vercel/analytics/next";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
           </QueryProvider>
           <ServiceWorkerRegister />
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
