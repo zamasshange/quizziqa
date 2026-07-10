@@ -1,6 +1,6 @@
-const CACHE_STATIC = "quizzical-static-v3";
-const CACHE_IMAGES = "quizzical-images-v3";
-const CACHE_API = "quizzical-api-v3";
+const CACHE_STATIC = "quizzical-static-v4";
+const CACHE_IMAGES = "quizzical-images-v4";
+const CACHE_API = "quizzical-api-v4";
 
 const PRECACHE_URLS = [
   "/icons/icon-192.png",
@@ -47,6 +47,15 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
+
+  // Never intercept analytics / third-party telemetry
+  if (
+    url.hostname.includes("vercel-scripts.com") ||
+    url.hostname.includes("vitals.vercel-insights.com") ||
+    url.pathname.startsWith("/_vercel/")
+  ) {
+    return;
+  }
 
   if (event.request.mode === "navigate" || url.pathname === "/") {
     event.respondWith(fetch(event.request));

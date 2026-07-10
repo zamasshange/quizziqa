@@ -25,7 +25,7 @@ export function AppShell({
         <div className="relative flex flex-col flex-1 w-full">
           <div className="custom-container flex flex-col md:flex-row md:gap-6 flex-1 py-4">
             {!hideNav && (
-              <aside className="hidden md:block md:w-36 lg:w-44 shrink-0">
+              <aside className="hidden md:block md:w-36 lg:w-44 shrink-0 self-start sticky top-20 z-30 max-h-[calc(100dvh-5.5rem)] overflow-y-auto no-scrollbar">
                 <QuizCategoryNav />
               </aside>
             )}
@@ -34,8 +34,8 @@ export function AppShell({
               {!hideNav && <QuizMobileCategoryNav />}
 
               {!hideNav && (
-                <div className="flex items-center justify-between gap-2 py-2 mb-2 border-b border-black/10">
-                  <div className="flex items-center gap-3 md:gap-4 overflow-x-auto no-scrollbar">
+                <div className="flex md:hidden items-center justify-between gap-2 py-2 mb-2 border-b border-black/10">
+                  <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
                     <Link href="/daily" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap">
                       Daily
                     </Link>
@@ -45,13 +45,7 @@ export function AppShell({
                     <Link href="/profile" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap">
                       Profile
                     </Link>
-                    <Link href="/settings" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap">
-                      Settings
-                    </Link>
-                    <Link href="/search" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap">
-                      Search
-                    </Link>
-                    <Link href="/collections" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap hidden sm:inline">
+                    <Link href="/collections" className="text-xs font-bold text-black/60 hover:text-black whitespace-nowrap">
                       Collections
                     </Link>
                   </div>

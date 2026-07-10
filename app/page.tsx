@@ -1,9 +1,10 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { DailyJoinBanner, PromoBanners } from "@/components/home/quiz-home-banners";
+import { HomePlayground } from "@/components/home/home-playground";
 import { SectionHeader, HorizontalScroll } from "@/components/ui/section-header";
 import { CategoryCard } from "@/components/categories/category-card";
 import { GameCard } from "@/components/games/game-card";
-import { categories } from "@/lib/data/categories";
+import { categories, getCategoryById } from "@/lib/data/categories";
 import {
   getFeaturedGamesMeta,
   getTrendingGamesMeta,
@@ -31,6 +32,13 @@ export default function HomePage() {
   const guessTheGames = getSortedDynamicTemplates();
   const continueGame = guessTheGames.find((g) => g.slug === "guess-the-celebrity") ?? featured[0];
 
+  const playgroundGames = guessTheGames.map((game) => ({
+    slug: game.slug,
+    title: game.title,
+    emoji: getCategoryById(game.categoryId)?.emoji ?? "🎯",
+    categoryId: game.categoryId,
+  }));
+
   return (
     <AppShell>
       <DailyJoinBanner />
@@ -46,19 +54,22 @@ export default function HomePage() {
 
         <PromoBanners />
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <HomePlayground games={playgroundGames} />
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: "Games", value: siteStats.gamesAvailable + guessTheGames.length },
-            { label: "Players", value: formatNumber(siteStats.players) },
-            { label: "Categories", value: categories.length },
-            { label: "Completed", value: formatNumber(siteStats.challengesCompleted) },
+            { label: "Games", value: siteStats.gamesAvailable + guessTheGames.length, hint: "Ready to play" },
+            { label: "Players", value: formatNumber(siteStats.players), hint: "Worldwide" },
+            { label: "Categories", value: categories.length, hint: "Pick a vibe" },
+            { label: "Completed", value: formatNumber(siteStats.challengesCompleted), hint: "Rounds finished" },
           ].map((stat) => (
             <div
               key={stat.label}
-              className="rounded-xl bg-white border border-black/15 p-4 text-center shadow-soft-1"
+              className="rounded-xl bg-white border border-black/15 p-4 shadow-soft-1"
             >
               <div className="text-2xl font-black">{stat.value}</div>
               <div className="text-xs font-bold text-black/60">{stat.label}</div>
+              <div className="text-[10px] font-bold text-black/35 mt-1">{stat.hint}</div>
             </div>
           ))}
         </div>
@@ -84,7 +95,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Guess the __ series */}
         <section>
           <SectionHeader title="Guess the…" href="/games" />
           <HorizontalScroll>

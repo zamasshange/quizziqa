@@ -34,7 +34,8 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  overflow-x: hidden;
+  /* clip keeps horizontal overflow contained without breaking position:sticky/fixed */
+  overflow-x: clip;
   overflow-y: auto;
   height: auto;
 }
@@ -45,7 +46,7 @@ body {
   font-family: var(--font-roboto), system-ui, sans-serif;
   overscroll-behavior-y: auto;
   min-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: auto;
   min-height: 100dvh;
   -webkit-overflow-scrolling: touch;

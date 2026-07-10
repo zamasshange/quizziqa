@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { PlayModeBody } from "@/components/play-mode-body";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -41,6 +43,8 @@ export default function RootLayout({
             {children}
           </QueryProvider>
           <ServiceWorkerRegister />
+          <Analytics />
+          <SpeedInsights />
         </AuthProvider>
       </body>
     </html>
