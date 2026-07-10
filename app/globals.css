@@ -34,10 +34,9 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  /* clip keeps horizontal overflow contained without breaking position:sticky/fixed */
   overflow-x: clip;
-  overflow-y: auto;
-  height: auto;
+  /* Do NOT set overflow-y here — it breaks sticky/fixed descendants */
+  height: 100%;
 }
 
 body {
@@ -48,6 +47,7 @@ body {
   min-width: 100%;
   overflow-x: clip;
   overflow-y: auto;
+  min-height: 100%;
   min-height: 100dvh;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
@@ -347,6 +347,33 @@ body.play-mode .play-scroll-area {
   .custom-container {
     padding-left: 0;
     padding-right: 0;
+  }
+}
+
+/* Viewport-locked category rail — never scrolls with page content */
+.quiz-sidebar-fixed {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .quiz-sidebar-fixed {
+    display: block;
+    position: fixed !important;
+    top: 5rem; /* matches md header height (h-20) */
+    left: max(0px, calc((100vw - 1280px) / 2));
+    width: 9rem; /* w-36 */
+    max-height: calc(100dvh - 5.5rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+    z-index: 40;
+    padding-top: 0.5rem;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .quiz-sidebar-fixed {
+    width: 11rem; /* w-44 */
   }
 }
 

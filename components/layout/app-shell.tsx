@@ -1,4 +1,5 @@
-import { QuizNav, QuizCategoryNav, QuizMobileCategoryNav } from "@/components/layout/quiz-nav";
+import { QuizNav, QuizMobileCategoryNav } from "@/components/layout/quiz-nav";
+import { FixedCategorySidebar } from "@/components/layout/fixed-category-sidebar";
 import Link from "next/link";
 import { AuthControls } from "@/components/auth/auth-controls";
 
@@ -17,6 +18,9 @@ export function AppShell({
     <div className="relative z-[1] flex flex-col min-h-dvh bg-background">
       {!hideNav && <QuizNav minimal={playMode} />}
 
+      {/* Portal → document.body, position:fixed — cannot scroll with content */}
+      {!hideNav && !playMode && <FixedCategorySidebar />}
+
       {playMode ? (
         <div className="relative flex flex-col flex-1 w-full h-dvh max-h-dvh overflow-hidden">
           {children}
@@ -24,10 +28,12 @@ export function AppShell({
       ) : (
         <div className="relative flex flex-col flex-1 w-full">
           <div className="custom-container flex flex-col md:flex-row md:gap-6 flex-1 py-4">
+            {/* Width spacer only — real nav is fixed on the viewport */}
             {!hideNav && (
-              <aside className="hidden md:block md:w-36 lg:w-44 shrink-0 self-start sticky top-20 z-30 max-h-[calc(100dvh-5.5rem)] overflow-y-auto no-scrollbar">
-                <QuizCategoryNav />
-              </aside>
+              <div
+                className="hidden md:block md:w-36 lg:w-44 shrink-0"
+                aria-hidden
+              />
             )}
 
             <div className="flex flex-col flex-1 min-w-0">
