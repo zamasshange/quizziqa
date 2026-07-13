@@ -56,8 +56,7 @@ self.addEventListener("fetch", (event) => {
     url.hostname.includes("antiadblocksystems.com") ||
     url.hostname.includes("popads.net") ||
     url.hostname.includes("popadscdn.net") ||
-    url.pathname.startsWith("/_vercel/") ||
-    url.pathname === "/popads.js"
+    url.pathname.startsWith("/_vercel/")
   ) {
     return;
   }
