@@ -9,14 +9,28 @@ const popadsEnabled = process.env.NEXT_PUBLIC_POPADS_ENABLED !== "false";
 
 function isHtmlDocumentRequest(req: NextRequest): boolean {
   if (req.method !== "GET") return false;
-  if (req.nextUrl.pathname.startsWith("/api")) return false;
-  if (req.nextUrl.pathname.startsWith("/_next")) return false;
+  const path = req.nextUrl.pathname;
+  if (path.startsWith("/api")) return false;
+  if (path.startsWith("/_next")) return false;
   // Skip RSC / client navigations — only full HTML documents
   if (req.headers.get("RSC") === "1") return false;
   if (req.headers.has("next-router-state-tree")) return false;
   if (req.headers.has("next-router-prefetch")) return false;
+  if (req.headers.has("next-url")) return false;
+
+  const dest = req.headers.get("sec-fetch-dest");
+  if (dest === "document") return true;
+
   const accept = req.headers.get("accept") ?? "";
-  return accept.includes("text/html");
+  if (accept.includes("text/html")) return true;
+
+  // Bots / checkers (incl. PopAds) often send */* or empty Accept
+  if (!accept || accept.includes("*/*")) {
+    const last = path.split("/").pop() ?? "";
+    if (!last.includes(".")) return true;
+  }
+
+  return false;
 }
 
 /**
@@ -24,13 +38,11 @@ function isHtmlDocumentRequest(req: NextRequest): boolean {
  * React must NOT render the adcode (Next duplicates it into the RSC payload).
  */
 function ensureSinglePopAds(html: string): string {
-  // Drop any leftover <script>…PopAds…</script> from older deploys
   let out = html.replace(
     /<script\b[^>]*>[\s\S]*?e83cd509981011e40e1a02a5b440bafe[\s\S]*?<\/script>/gi,
     ""
   );
 
-  // Scrub escaped copies inside RSC/flight JSON so they are not counted
   if (out.includes(POPADS_MARKER)) {
     out = out.split(POPADS_MARKER).join("");
   }
@@ -62,38 +74,42 @@ export default async function proxy(req: NextRequest, event: NextFetchEvent) {
     return withClerk(req, event);
   }
 
-  const headers = new Headers(req.headers);
-  headers.set("x-popads-pass", "1");
-  // Avoid compressed bodies we can't safely rewrite
-  headers.set("accept-encoding", "identity");
+  try {
+    const headers = new Headers(req.headers);
+    headers.set("x-popads-pass", "1");
+    headers.set("accept-encoding", "identity");
 
-  const upstream = await fetch(req.nextUrl.href, {
-    method: "GET",
-    headers,
-    redirect: "manual",
-  });
+    const upstream = await fetch(req.nextUrl.href, {
+      method: "GET",
+      headers,
+      redirect: "manual",
+    });
 
-  const contentType = upstream.headers.get("content-type") ?? "";
-  if (!contentType.includes("text/html")) {
-    return new NextResponse(upstream.body, {
+    const contentType = upstream.headers.get("content-type") ?? "";
+    if (!contentType.includes("text/html")) {
+      return new NextResponse(upstream.body, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers: upstream.headers,
+      });
+    }
+
+    const html = await upstream.text();
+    const patched = ensureSinglePopAds(html);
+
+    const outHeaders = new Headers(upstream.headers);
+    outHeaders.delete("content-length");
+    outHeaders.delete("content-encoding");
+
+    return new NextResponse(patched, {
       status: upstream.status,
       statusText: upstream.statusText,
-      headers: upstream.headers,
+      headers: outHeaders,
     });
+  } catch {
+    // Never break the site if injection fails
+    return withClerk(req, event);
   }
-
-  const html = await upstream.text();
-  const patched = ensureSinglePopAds(html);
-
-  const outHeaders = new Headers(upstream.headers);
-  outHeaders.delete("content-length");
-  outHeaders.delete("content-encoding");
-
-  return new NextResponse(patched, {
-    status: upstream.status,
-    statusText: upstream.statusText,
-    headers: outHeaders,
-  });
 }
 
 export const config = {
