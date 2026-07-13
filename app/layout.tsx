@@ -5,7 +5,6 @@ import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { PlayModeBody } from "@/components/play-mode-body";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
-import { PopAds } from "@/components/ads/popads";
 import { WebsiteJsonLd, OrganizationJsonLd } from "@/components/seo/json-ld";
 import { buildHomeMetadata } from "@/lib/seo/metadata";
 import { Roboto } from "next/font/google";
@@ -38,8 +37,6 @@ export default function RootLayout({
         <OrganizationJsonLd />
       </head>
       <body className="antialiased">
-        {/* PopAds — beforeInteractive so the snippet is in the initial HTML for detection */}
-        <PopAds />
         <AuthProvider>
           <QueryProvider>
             <PlayModeBody playMode={false} />
