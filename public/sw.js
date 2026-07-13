@@ -1,6 +1,6 @@
-const CACHE_STATIC = "quizzical-static-v4";
-const CACHE_IMAGES = "quizzical-images-v4";
-const CACHE_API = "quizzical-api-v4";
+const CACHE_STATIC = "quizzical-static-v5";
+const CACHE_IMAGES = "quizzical-images-v5";
+const CACHE_API = "quizzical-api-v5";
 
 const PRECACHE_URLS = [
   "/icons/icon-192.png",
@@ -48,11 +48,16 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
 
-  // Never intercept analytics / third-party telemetry
+  // Never intercept analytics / ads / third-party telemetry
   if (
     url.hostname.includes("vercel-scripts.com") ||
     url.hostname.includes("vitals.vercel-insights.com") ||
-    url.pathname.startsWith("/_vercel/")
+    url.hostname.includes("cloudfront.net") ||
+    url.hostname.includes("antiadblocksystems.com") ||
+    url.hostname.includes("popads.net") ||
+    url.hostname.includes("popadscdn.net") ||
+    url.pathname.startsWith("/_vercel/") ||
+    url.pathname === "/popads.js"
   ) {
     return;
   }
